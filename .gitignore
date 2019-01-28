@@ -1,0 +1,15 @@
+quartus/db/
+quartus/incremental_db/
+quartus/*.txt
+quartus/*.hex
+quartus/hps_fpga/
+quartus/*_isw_handoff/
+quartus/stamp/
+quartus/*_sdram_p0_summary.csv
+quartus/*.sopcinfo
+quartus/outputs/*
+!quartus/outputs/*.rbf
+!quartus/outputs/*.sof
+
+
+
