@@ -120,10 +120,10 @@ entity hpsfpga is
     io_7 : inout  std_logic;
 
     --------- UART ----------
-    uart0_rx     : in  std_logic;
+    uart0_rx     : in std_logic;
     uart0_tx     : out std_logic;
 
-    uart1_rx     : in  std_logic;
+    uart1_rx     : inout  std_logic;
     uart1_tx     : out std_logic;
 
     uart2_rx     : in  std_logic;

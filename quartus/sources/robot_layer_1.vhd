@@ -105,7 +105,7 @@ entity robot_layer_1 is
         uart0_rx     : in  std_logic;
         uart0_tx     : out std_logic;
 
-        uart1_rx     : in  std_logic;
+        uart1_rx     : inout std_logic;
         uart1_tx     : out std_logic;
 
         uart2_rx     : in  std_logic;
@@ -180,21 +180,22 @@ architecture rtl of robot_layer_1 is
 	component system_ll is
 		port (
 			clk_clk                    : in  std_logic                      := 'X';             -- clk
-			i2c_master_serial_0_sda_in : in  std_logic                      := 'X';             -- sda_in
-			i2c_master_serial_0_scl_in : in  std_logic                      := 'X';             -- scl_in
-			i2c_master_serial_0_sda_oe : out std_logic;                                         -- sda_oe
-			i2c_master_serial_0_scl_oe : out std_logic;                                         -- scl_oe
-			i2c_master_serial_1_sda_in : in  std_logic                      := 'X';             -- sda_in
-			i2c_master_serial_1_scl_in : in  std_logic                      := 'X';             -- scl_in
-			i2c_master_serial_1_sda_oe : out std_logic;                                         -- sda_oe
-			i2c_master_serial_1_scl_oe : out std_logic;                                         -- scl_oe
+			--i2c_master_serial_0_sda_in : in  std_logic                      := 'X';             -- sda_in
+			--i2c_master_serial_0_scl_in : in  std_logic                      := 'X';             -- scl_in
+			--i2c_master_serial_0_sda_oe : out std_logic;                                         -- sda_oe
+			--i2c_master_serial_0_scl_oe : out std_logic;                                         -- scl_oe
+			--i2c_master_serial_1_sda_in : in  std_logic                      := 'X';             -- sda_in
+			--i2c_master_serial_1_scl_in : in  std_logic                      := 'X';             -- scl_in
+			--i2c_master_serial_1_sda_oe : out std_logic;                                         -- sda_oe
+			--i2c_master_serial_1_scl_oe : out std_logic;                                         -- scl_oe
 			pio_data_in_value          : in  std_logic_vector(511 downto 0) := (others => 'X'); -- data_in_value
 			pio_data_in_read           : out std_logic_vector(15 downto 0);                     -- data_in_read
 			pio_data_out_value         : out std_logic_vector(511 downto 0);                    -- data_out_value
 			pio_data_out_write         : out std_logic_vector(15 downto 0);                     -- data_out_write
 			reset_reset_n              : in  std_logic                      := 'X';             -- reset_n
 			uart_0_external_rxd        : in  std_logic                      := 'X';             -- rxd
-			uart_0_external_txd        : out std_logic
+			uart_0_external_txd        : out std_logic;
+			uart_0_external_transmitting: out std_logic 
 		);
 	end component system_ll;
 
@@ -294,6 +295,11 @@ architecture rtl of robot_layer_1 is
     signal w_i2c_1_sda_oe  : std_logic;
     signal w_i2c_1_reset   : std_logic;
 
+	 signal r_ll_uart_1_rs485 : std_logic := '1';
+	 signal w_ll_uart_1_rxd : std_logic;
+	 signal w_ll_uart_1_txd : std_logic;
+	 signal w_ll_uart_1_transmitting : std_logic;
+	 
 
 begin
 	
@@ -1003,13 +1009,13 @@ begin
     end generate;
 
 
+    --uart0_tx <= uart_tx(0);
     uart0_tx <= uart_tx(0);
-    uart1_tx <= uart_tx(1);
     uart2_tx <= uart_tx(2);
     uart3_tx <= uart_tx(3);
 
-    uart_rx(0) <= uart_tx(0);--uart0_rx;
-    uart_rx(1) <= uart1_rx;
+    --uart_rx(0) <= uart_tx(0);--uart0_rx;
+    uart_rx(0) <= uart0_rx;
     uart_rx(2) <= uart2_rx;
     uart_rx(3) <= uart3_rx;
 
@@ -1021,6 +1027,12 @@ begin
     i2c1_sda <= 'Z' when w_i2c_1_sda_oe = '0' else '0';
 
 
+	 uart1_rx <= w_ll_uart_1_txd when r_ll_uart_1_rs485 = '1' and w_ll_uart_1_transmitting = '1' else 
+					 'Z';
+					  		  
+	 w_ll_uart_1_rxd <= uart1_rx when r_ll_uart_1_rs485 = '0' or w_ll_uart_1_transmitting = '0' else '1';
+	 uart1_tx 		  <= w_ll_uart_1_txd;
+	 
 
 
     b_orca_low_level: block
@@ -1056,6 +1068,12 @@ begin
         constant REGS_COLOR_BC_OFFSET    : natural := 52;
         constant REGS_DISTANCE_OFFSET    : natural := 53;
 
+        constant REGS_CMD_IN_OFFSET       : natural := 61;
+        constant REGS_CMD_PARAMS_OFFSET   : natural := 62;
+		  constant REGS_CMD_OUT_OFFSET      : natural := 63;
+		  
+		  
+		  
         constant ORCA_REGS_ADC_CFG_OFFSET    : natural := 1;
         constant ORCA_REGS_ADC_VALUE_OFFSET  : natural := 2;
         constant ORCA_REGS_COLOR_CFG_OFFSET  : natural := 3;
@@ -1063,7 +1081,12 @@ begin
         constant ORCA_REGS_COLOR_BC_OFFSET   : natural := 5;
         constant ORCA_REGS_DIST_CFG_OFFSET   : natural := 6;
         constant ORCA_REGS_DIST_VALUE_OFFSET : natural := 7;
+        constant ORCA_REGS_CMD_IN_OFFSET 	   : natural := 8;
+        constant ORCA_REGS_CMD_PARAMS_OFFSET : natural := 9;
+        constant ORCA_REGS_CMD_OUT_OFFSET 	: natural := 10;
 
+		  
+		  
         signal w_adc_muxed_id       : std_logic_vector(8-1 downto 0);
         signal w_adc_muxed_valid    : std_logic;
         signal w_adc_muxed_data     : std_logic_vector(32-1 downto 0);
@@ -1084,6 +1107,11 @@ begin
         w_regs_data_in_value_mask((1+REGS_COLOR_BC_OFFSET)*4-1      downto (0+REGS_COLOR_BC_OFFSET)*4)      <= "1111";
         w_regs_data_in_value_mask((1+8+REGS_DISTANCE_OFFSET)*4-1    downto (0+REGS_DISTANCE_OFFSET)*4)   <= (others=>'1');
 
+        w_regs_data_in_value_mask((1+REGS_CMD_IN_OFFSET)*4-1      downto (0+REGS_CMD_IN_OFFSET)*4)      <= "1111";
+        w_regs_data_in_value_mask((1+REGS_CMD_PARAMS_OFFSET)*4-1  downto (0+REGS_CMD_PARAMS_OFFSET)*4)  <= "1111";
+        w_regs_data_in_value_mask((1+REGS_CMD_OUT_OFFSET)*4-1     downto (0+REGS_CMD_OUT_OFFSET)*4)     <= "1111";
+
+		  
         p_async: process(regs_data_out_value,w_pio_data_out_value,r_distance) is
         begin
             w_pio_data_in_value(1*32-1 downto 0*32)      <= X"00000000";
@@ -1093,10 +1121,13 @@ begin
             w_pio_data_in_value((1+ORCA_REGS_ADC_VALUE_OFFSET)*32-1 downto (0+ORCA_REGS_ADC_VALUE_OFFSET)*32) <= X"0000000" & "000" & regs_data_out_value(8);
             --w_pio_data_in_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1 downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32)(0) <= regs_data_out_value(8);
 
+
             
             for i in 0 to r_distance'length-1 loop
                 w_regs_data_in_value((1+i+REGS_DISTANCE_OFFSET)*32-1    downto (0+i+REGS_DISTANCE_OFFSET)*32) <= r_distance(i);
             end loop;
+
+            w_pio_data_in_value((ORCA_REGS_CMD_OUT_OFFSET+1)*32-1 downto (ORCA_REGS_CMD_IN_OFFSET)*32) <= regs_data_out_value((REGS_CMD_OUT_OFFSET+1)*32-1 downto REGS_CMD_IN_OFFSET*32);
 
 
         end process;
@@ -1106,7 +1137,11 @@ begin
         w_regs_data_in_value((1+REGS_COLOR_RG_OFFSET)*32-1 downto (0+REGS_COLOR_RG_OFFSET)*32) <= w_pio_data_out_value((1+ORCA_REGS_COLOR_RG_OFFSET)*32-1   downto (0+ORCA_REGS_COLOR_RG_OFFSET)*32);
         w_regs_data_in_value((1+REGS_COLOR_BC_OFFSET)*32-1 downto (0+REGS_COLOR_BC_OFFSET)*32) <= w_pio_data_out_value((1+ORCA_REGS_COLOR_BC_OFFSET)*32-1   downto (0+ORCA_REGS_COLOR_BC_OFFSET)*32);
 
+        w_regs_data_in_value((1+REGS_CMD_IN_OFFSET)*32-1 downto (0+REGS_CMD_IN_OFFSET)*32)         <= w_pio_data_out_value((1+ORCA_REGS_CMD_IN_OFFSET)*32-1   downto (0+ORCA_REGS_CMD_IN_OFFSET)*32);
+        w_regs_data_in_value((1+REGS_CMD_PARAMS_OFFSET)*32-1 downto (0+REGS_CMD_PARAMS_OFFSET)*32) <= w_pio_data_out_value((1+ORCA_REGS_CMD_PARAMS_OFFSET)*32-1   downto (0+ORCA_REGS_CMD_PARAMS_OFFSET)*32);
+        w_regs_data_in_value((1+REGS_CMD_OUT_OFFSET)*32-1 downto (0+REGS_CMD_OUT_OFFSET)*32)       <= w_pio_data_out_value((1+ORCA_REGS_CMD_OUT_OFFSET)*32-1   downto (0+ORCA_REGS_CMD_OUT_OFFSET)*32);
 
+		  
         i2c1_reset <= std_norm_range(w_pio_data_out_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1 downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32))(8);
 
         w_adc_muxed_id      <= std_norm_range(w_pio_data_out_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1   downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32))(32-1 downto 24);
@@ -1146,19 +1181,23 @@ begin
 	    inst_orca_low_level : component system_ll
 	    port map (
 		    clk_clk                    => clk,                    --                 clk.clk
-		    i2c_master_serial_0_sda_in => i2c0_sda, -- i2c_master_serial_0.sda_in
-		    i2c_master_serial_0_scl_in => i2c0_scl, --                    .scl_in
-		    i2c_master_serial_0_sda_oe => w_i2c_0_sda_oe, --                    .sda_oe
-		    i2c_master_serial_0_scl_oe => w_i2c_0_scl_oe, --                    .scl_oe
-		    i2c_master_serial_1_sda_in => i2c1_sda, -- i2c_master_serial_1.sda_in
-		    i2c_master_serial_1_scl_in => i2c1_scl, --                    .scl_in
-		    i2c_master_serial_1_sda_oe => w_i2c_1_sda_oe, --                    .sda_oe
-		    i2c_master_serial_1_scl_oe => w_i2c_1_scl_oe, --                    .scl_oe
+		    --i2c_master_serial_0_sda_in => i2c0_sda, -- i2c_master_serial_0.sda_in
+		    --i2c_master_serial_0_scl_in => i2c0_scl, --                    .scl_in
+		    --i2c_master_serial_0_sda_oe => w_i2c_0_sda_oe, --                    .sda_oe
+		    --i2c_master_serial_0_scl_oe => w_i2c_0_scl_oe, --                    .scl_oe
+		    --i2c_master_serial_1_sda_in => i2c1_sda, -- i2c_master_serial_1.sda_in
+		    --i2c_master_serial_1_scl_in => i2c1_scl, --                    .scl_in
+		    --i2c_master_serial_1_sda_oe => w_i2c_1_sda_oe, --                    .sda_oe
+		    --i2c_master_serial_1_scl_oe => w_i2c_1_scl_oe, --                    .scl_oe
 		    pio_data_in_value          => w_pio_data_in_value,          --                 pio.data_in_value
 		    pio_data_in_read           => open,           --                    .data_in_read
 		    pio_data_out_value         => w_pio_data_out_value,         --                    .data_out_value
 		    pio_data_out_write         => open,         --                    .data_out_write
-		    reset_reset_n              => not reset              --               reset.reset_n
+		    reset_reset_n              => not reset,              --               reset.reset_n
+		    uart_0_external_rxd        => w_ll_uart_1_rxd,             
+		    uart_0_external_txd        => w_ll_uart_1_txd,     
+		    uart_0_external_transmitting=> w_ll_uart_1_transmitting
+
 		    --uart_0_external_rxd        => CONNECTED_TO_uart_0_external_rxd,        --     uart_0_external.rxd
 		    --uart_0_external_txd        => CONNECTED_TO_uart_0_external_txd,        --                    .txd
 	    );

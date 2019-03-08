@@ -15,8 +15,10 @@ Repository setup:
     cd <repo_base\>
     
     $git submodule update --init orca/
-
-    $git submodule update --init orca/software/generic/cvra-modules/
+    
+    $cd orca
+    
+    $git submodule update --init software/generic/cvra-modules/
 </code>
 
 * For the first checkout, you need to have installed GCC for cross compilation targetting RISCV. Please follow tutorial here: 
@@ -29,7 +31,7 @@ Repository setup:
 
 Required Software:
 ===
-  * Quartus Prime Software v16.1 Update 2 installed (to be found here: http://dl.altera.com/16.1/?edition=lite)
+  * Quartus Prime Software v16.1 Update 2 (to be found here: http://dl.altera.com/16.1/?edition=lite)
 
 
 
