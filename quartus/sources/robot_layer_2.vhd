@@ -179,6 +179,10 @@ begin
 
 
         inst_odometry_rv : system_generic
+        generic map (
+            INIT_FILE => "odometry.hex",
+            MEMORY_SIZE_BYTES => 30*1024
+        )
         port map (
             clk_clk                 => clk,
             reset_reset_n           => w_reset_n,
@@ -307,6 +311,10 @@ begin
             assert w_pio_data_out_write = w_pio_data_out_write;
 
             inst_motor_pid_rv : system_generic
+            generic map (
+                INIT_FILE => "pid.hex",
+                MEMORY_SIZE_BYTES => 1024*20
+            )
             port map (
                 clk_clk                 => clk,
                 reset_reset_n           => w_reset_n,
@@ -358,7 +366,7 @@ begin
     inst_lidar_rv : system_generic
     generic map (
         INIT_FILE => "lidar.hex",
-        MEMORY_SIZE_BYTES => 32768
+        MEMORY_SIZE_BYTES => 30*1024
     )
     port map (
         clk_clk                 => clk,

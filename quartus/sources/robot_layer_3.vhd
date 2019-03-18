@@ -162,6 +162,10 @@ begin
         assert w_pio_data_out_write = w_pio_data_out_write;
 
         inst_trajectory_rv : system_generic
+        generic map (
+            INIT_FILE => "trajectory.hex",
+            MEMORY_SIZE_BYTES => 40*1024
+        )
         port map (
             clk_clk                 => clk,
             reset_reset_n           => w_reset_n,
