@@ -1,3 +1,6 @@
 [submodule "orca"]
 	path = orca
 	url = https://github.com/WestTeam/orca
+[submodule "sw/cvra-modules"]
+	path = sw/cvra-modules
+	url = https://github.com/WestTeam/cvra-modules.git
