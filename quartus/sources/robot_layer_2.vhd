@@ -6,6 +6,8 @@ use IEEE.numeric_std.all;
 library work;
 use     work.types_pkg.all;
 use     work.robot_layer_2_pkg.all;
+use     work.system_generic_pkg.all;
+
 
 entity robot_layer_2 is
     generic (
@@ -16,11 +18,19 @@ entity robot_layer_2 is
         clk                     : in  std_logic;             
         reset                   : in  std_logic;             
 
+        ---------------------------------
+        ------ TO/FROM SOFTWARE/OS ------
+        ---------------------------------           
+        
         regs_data_in_value      : out  std_logic_vector(RegCnt*32-1 downto 0) := (others => '0'); 
         regs_data_in_read       : in std_logic_vector(RegCnt-1 downto 0);                       
         regs_data_out_value     : in std_logic_vector(RegCnt*32-1 downto 0);                    
         regs_data_out_write     : in std_logic_vector(RegCnt-1 downto 0);
 
+     
+        sw_uart_tx : in  std_logic_vector(SW_UART_L2_COUNT-1 downto 0);
+        sw_uart_rx : out std_logic_vector(SW_UART_L2_COUNT-1 downto 0);   
+        
         ---------------------------------
         -------- TO/FROM LAYER 1 --------
         ---------------------------------
@@ -72,18 +82,18 @@ end entity;
 
 architecture rtl of robot_layer_2 is
 
-    component system is
-        port (
-            clk_clk            : in  std_logic                      := 'X';             -- clk
-            pio_data_in_value  : in  std_logic_vector(511 downto 0) := (others => 'X'); -- data_in_value
-            pio_data_in_read   : out std_logic_vector(15 downto 0);                     -- data_in_read
-            pio_data_out_value : out std_logic_vector(511 downto 0);                    -- data_out_value
-            pio_data_out_write : out std_logic_vector(15 downto 0);                     -- data_out_write
-            reset_reset_n      : in  std_logic                      := 'X';              -- reset_n
-			uart_0_external_rxd      : in  std_logic                      := 'X';             -- rxd
-			uart_0_external_txd      : out std_logic                                          -- txd
-        );
-    end component system;
+--		 component system is
+--			  port (
+--					clk_clk            : in  std_logic                      := 'X';             -- clk
+--					pio_data_in_value  : in  std_logic_vector(511 downto 0) := (others => 'X'); -- data_in_value
+--					pio_data_in_read   : out std_logic_vector(15 downto 0);                     -- data_in_read
+--					pio_data_out_value : out std_logic_vector(511 downto 0);                    -- data_out_value
+--					pio_data_out_write : out std_logic_vector(15 downto 0);                     -- data_out_write
+--					reset_reset_n      : in  std_logic                      := 'X';              -- reset_n
+--				uart_0_external_rxd      : in  std_logic                      := 'X';             -- rxd
+--				uart_0_external_txd      : out std_logic                                          -- txd
+--			  );
+--		 end component system;
 
 
     signal w_reset_n : std_logic;
@@ -168,7 +178,7 @@ begin
         assert w_pio_data_out_write = w_pio_data_out_write;
 
 
-        inst_odometry_rv : component system
+        inst_odometry_rv : system_generic
         port map (
             clk_clk                 => clk,
             reset_reset_n           => w_reset_n,
@@ -176,8 +186,8 @@ begin
             pio_data_in_read        => w_pio_data_in_read,
             pio_data_out_value      => w_pio_data_out_value,
             pio_data_out_write      => w_pio_data_out_write,
-			uart_0_external_rxd      => uart_rx(0),
-			uart_0_external_txd      => uart_tx(0)
+			uart_0_external_rxd      => sw_uart_tx(SW_UART_L2_ID_ODOMETRY),--uart_rx(0),
+			uart_0_external_txd      => sw_uart_rx(SW_UART_L2_ID_ODOMETRY)--uart_tx(0)
         );
 
     end block;
@@ -296,7 +306,7 @@ begin
             assert w_pio_data_in_read = w_pio_data_in_read;
             assert w_pio_data_out_write = w_pio_data_out_write;
 
-            inst_motor_pid_rv : component system
+            inst_motor_pid_rv : system_generic
             port map (
                 clk_clk                 => clk,
                 reset_reset_n           => w_reset_n,
@@ -304,8 +314,8 @@ begin
                 pio_data_in_read        => w_pio_data_in_read,
                 pio_data_out_value      => w_pio_data_out_value,
                 pio_data_out_write      => w_pio_data_out_write,
-			    uart_0_external_rxd      => uart_rx(i+1),
-			    uart_0_external_txd      => uart_tx(i+1)
+                uart_0_external_rxd      => sw_uart_tx(SW_UART_L2_ID_PID_D+i),
+                uart_0_external_txd      => sw_uart_rx(SW_UART_L2_ID_PID_D+i)
             );
         end generate;
     end block;
@@ -341,6 +351,25 @@ begin
     motor_value(5) <= (others=>'0');
 
 
+    -- LIDAR BYPASS --
+    uart_tx(2) <= sw_uart_tx(SW_UART_L2_ID_LIDAR);
+    sw_uart_rx(SW_UART_L2_ID_LIDAR) <= uart_rx(2);
+
+    inst_lidar_rv : system_generic
+    generic map (
+        INIT_FILE => "lidar.hex",
+        MEMORY_SIZE_BYTES => 32768
+    )
+    port map (
+        clk_clk                 => clk,
+        reset_reset_n           => w_reset_n,
+        pio_data_in_value       => (others=>'0'),
+        pio_data_in_read        => open,
+        pio_data_out_value      => open,
+        pio_data_out_write      => open,
+        uart_0_external_rxd      => uart_rx(2),
+        uart_0_external_txd      => open
+    );
 
 
 end architecture;

@@ -21,7 +21,7 @@
    {
       datum _sortIndex
       {
-         value = "7";
+         value = "6";
          type = "int";
       }
    }
@@ -59,6 +59,48 @@
          type = "String";
       }
    }
+   element memory_data
+   {
+      datum _sortIndex
+      {
+         value = "9";
+         type = "int";
+      }
+   }
+   element memory_data.avalon_anti_master_0
+   {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
+      datum baseAddress
+      {
+         value = "0";
+         type = "String";
+      }
+   }
+   element memory_instruction
+   {
+      datum _sortIndex
+      {
+         value = "8";
+         type = "int";
+      }
+   }
+   element memory_instruction.avalon_anti_master_0
+   {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
+      datum baseAddress
+      {
+         value = "0";
+         type = "String";
+      }
+   }
    element mm_bridge_0
    {
       datum _sortIndex
@@ -92,12 +134,12 @@
    {
       datum _lockedAddress
       {
-         value = "1";
+         value = "0";
          type = "boolean";
       }
       datum baseAddress
       {
-         value = "16777216";
+         value = "0";
          type = "String";
       }
    }
@@ -105,12 +147,12 @@
    {
       datum _lockedAddress
       {
-         value = "1";
+         value = "0";
          type = "boolean";
       }
       datum baseAddress
       {
-         value = "16777216";
+         value = "0";
          type = "String";
       }
    }
@@ -139,6 +181,46 @@
    {
       datum _originalDeviceFamily
       {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
          value = "Cyclone IV E";
          type = "String";
       }
@@ -219,55 +301,23 @@
    {
       datum _originalDeviceFamily
       {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
          value = "Cyclone V";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone IV E";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone IV E";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone IV E";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone IV E";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone IV E";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone IV E";
          type = "String";
       }
    }
@@ -275,7 +325,7 @@
    {
       datum _sortIndex
       {
-         value = "6";
+         value = "7";
          type = "int";
       }
    }
@@ -333,6 +383,16 @@ proc compose {} {
  <interface name="clk" internal="clk_0.clk_in" type="clock" dir="end" />
  <interface name="from_host" internal="vectorblox_orca_0.from_host" />
  <interface name="i2c_master_serial" internal="i2c_master.i2c_serial" />
+ <interface
+   name="memory_data"
+   internal="memory_data.avalon_universal_master_0"
+   type="avalon"
+   dir="start" />
+ <interface
+   name="memory_instruction"
+   internal="memory_instruction.avalon_universal_master_0"
+   type="avalon"
+   dir="start" />
  <interface name="pio" internal="pio_n_0.data" type="conduit" dir="end" />
  <interface name="program_counter" internal="vectorblox_orca_0.program_counter" />
  <interface name="reset" internal="clk_0.clk_in_reset" type="reset" dir="end" />
@@ -373,6 +433,108 @@ proc compose {} {
   <parameter name="writeIRQThreshold" value="8" />
  </module>
  <module
+   name="memory_data"
+   kind="altera_merlin_master_translator"
+   version="16.1"
+   enabled="1">
+  <parameter name="AV_ADDRESSGROUP" value="0" />
+  <parameter name="AV_ADDRESS_SYMBOLS" value="0" />
+  <parameter name="AV_ADDRESS_W" value="22" />
+  <parameter name="AV_ALWAYSBURSTMAXBURST" value="0" />
+  <parameter name="AV_BITS_PER_SYMBOL" value="8" />
+  <parameter name="AV_BURSTBOUNDARIES" value="0" />
+  <parameter name="AV_BURSTCOUNT_SYMBOLS" value="0" />
+  <parameter name="AV_BURSTCOUNT_W" value="1" />
+  <parameter name="AV_BYTEENABLE_W" value="4" />
+  <parameter name="AV_CONSTANT_BURST_BEHAVIOR" value="0" />
+  <parameter name="AV_DATA_HOLD" value="0" />
+  <parameter name="AV_DATA_W" value="32" />
+  <parameter name="AV_INTERLEAVEBURSTS" value="0" />
+  <parameter name="AV_ISBIGENDIAN" value="0" />
+  <parameter name="AV_LINEWRAPBURSTS" value="0" />
+  <parameter name="AV_MAX_PENDING_READ_TRANSACTIONS" value="64" />
+  <parameter name="AV_READLATENCY" value="0" />
+  <parameter name="AV_READ_WAIT" value="0" />
+  <parameter name="AV_REGISTERINCOMINGSIGNALS" value="0" />
+  <parameter name="AV_REGISTEROUTGOINGSIGNALS" value="0" />
+  <parameter name="AV_SETUP_WAIT" value="0" />
+  <parameter name="AV_SYMBOLS_PER_WORD" value="4" />
+  <parameter name="AV_WRITE_WAIT" value="0" />
+  <parameter name="SYNC_RESET" value="0" />
+  <parameter name="UAV_ADDRESSGROUP" value="0" />
+  <parameter name="UAV_ADDRESS_W" value="24" />
+  <parameter name="UAV_BURSTCOUNT_W" value="1" />
+  <parameter name="UAV_CONSTANT_BURST_BEHAVIOR" value="0" />
+  <parameter name="USE_ADDRESS" value="1" />
+  <parameter name="USE_BEGINBURSTTRANSFER" value="0" />
+  <parameter name="USE_BEGINTRANSFER" value="0" />
+  <parameter name="USE_BURSTCOUNT" value="0" />
+  <parameter name="USE_BYTEENABLE" value="1" />
+  <parameter name="USE_CHIPSELECT" value="1" />
+  <parameter name="USE_CLKEN" value="1" />
+  <parameter name="USE_DEBUGACCESS" value="0" />
+  <parameter name="USE_LOCK" value="0" />
+  <parameter name="USE_READ" value="1" />
+  <parameter name="USE_READDATA" value="1" />
+  <parameter name="USE_READDATAVALID" value="1" />
+  <parameter name="USE_READRESPONSE" value="0" />
+  <parameter name="USE_WAITREQUEST" value="0" />
+  <parameter name="USE_WRITE" value="1" />
+  <parameter name="USE_WRITEDATA" value="1" />
+  <parameter name="USE_WRITERESPONSE" value="0" />
+ </module>
+ <module
+   name="memory_instruction"
+   kind="altera_merlin_master_translator"
+   version="16.1"
+   enabled="1">
+  <parameter name="AV_ADDRESSGROUP" value="0" />
+  <parameter name="AV_ADDRESS_SYMBOLS" value="0" />
+  <parameter name="AV_ADDRESS_W" value="22" />
+  <parameter name="AV_ALWAYSBURSTMAXBURST" value="0" />
+  <parameter name="AV_BITS_PER_SYMBOL" value="8" />
+  <parameter name="AV_BURSTBOUNDARIES" value="0" />
+  <parameter name="AV_BURSTCOUNT_SYMBOLS" value="0" />
+  <parameter name="AV_BURSTCOUNT_W" value="1" />
+  <parameter name="AV_BYTEENABLE_W" value="4" />
+  <parameter name="AV_CONSTANT_BURST_BEHAVIOR" value="0" />
+  <parameter name="AV_DATA_HOLD" value="0" />
+  <parameter name="AV_DATA_W" value="32" />
+  <parameter name="AV_INTERLEAVEBURSTS" value="0" />
+  <parameter name="AV_ISBIGENDIAN" value="0" />
+  <parameter name="AV_LINEWRAPBURSTS" value="0" />
+  <parameter name="AV_MAX_PENDING_READ_TRANSACTIONS" value="64" />
+  <parameter name="AV_READLATENCY" value="0" />
+  <parameter name="AV_READ_WAIT" value="0" />
+  <parameter name="AV_REGISTERINCOMINGSIGNALS" value="0" />
+  <parameter name="AV_REGISTEROUTGOINGSIGNALS" value="0" />
+  <parameter name="AV_SETUP_WAIT" value="0" />
+  <parameter name="AV_SYMBOLS_PER_WORD" value="4" />
+  <parameter name="AV_WRITE_WAIT" value="0" />
+  <parameter name="SYNC_RESET" value="0" />
+  <parameter name="UAV_ADDRESSGROUP" value="0" />
+  <parameter name="UAV_ADDRESS_W" value="24" />
+  <parameter name="UAV_BURSTCOUNT_W" value="1" />
+  <parameter name="UAV_CONSTANT_BURST_BEHAVIOR" value="0" />
+  <parameter name="USE_ADDRESS" value="1" />
+  <parameter name="USE_BEGINBURSTTRANSFER" value="0" />
+  <parameter name="USE_BEGINTRANSFER" value="0" />
+  <parameter name="USE_BURSTCOUNT" value="0" />
+  <parameter name="USE_BYTEENABLE" value="1" />
+  <parameter name="USE_CHIPSELECT" value="1" />
+  <parameter name="USE_CLKEN" value="1" />
+  <parameter name="USE_DEBUGACCESS" value="0" />
+  <parameter name="USE_LOCK" value="0" />
+  <parameter name="USE_READ" value="1" />
+  <parameter name="USE_READDATA" value="1" />
+  <parameter name="USE_READDATAVALID" value="1" />
+  <parameter name="USE_READRESPONSE" value="0" />
+  <parameter name="USE_WAITREQUEST" value="0" />
+  <parameter name="USE_WRITE" value="1" />
+  <parameter name="USE_WRITEDATA" value="1" />
+  <parameter name="USE_WRITERESPONSE" value="0" />
+ </module>
+ <module
    name="mm_bridge_0"
    kind="altera_avalon_mm_bridge"
    version="16.1"
@@ -394,9 +556,9 @@ proc compose {} {
    name="onchip_memory2_0"
    kind="altera_avalon_onchip_memory2"
    version="16.1"
-   enabled="1">
+   enabled="0">
   <parameter name="allowInSystemMemoryContentEditor" value="false" />
-  <parameter name="autoInitializationFileName">$${FILENAME}_onchip_memory2_0</parameter>
+  <parameter name="autoInitializationFileName">system_onchip_memory2_0</parameter>
   <parameter name="blockType" value="AUTO" />
   <parameter name="copyInitFile" value="false" />
   <parameter name="dataWidth" value="32" />
@@ -426,21 +588,43 @@ proc compose {} {
   <parameter name="ByteEnable" value="false" />
   <parameter name="RegCnt" value="16" />
  </module>
- <module name="uart_0" kind="altera_avalon_uart" version="16.1" enabled="1">
+ <module name="uart_0" kind="fifoed_avalon_uart" version="13.2" enabled="1">
+  <parameter name="add_error_bits" value="false" />
   <parameter name="baud" value="115200" />
   <parameter name="clockRate" value="50000000" />
   <parameter name="dataBits" value="8" />
+  <parameter name="driver_pass_error_bits" value="false" />
+  <parameter name="export_handshake" value="false" />
+  <parameter name="fifo_export_used" value="false" />
+  <parameter name="fifo_size_rx" value="32" />
+  <parameter name="fifo_size_tx" value="32" />
   <parameter name="fixedBaud" value="false" />
+  <parameter name="gap_value" value="4" />
+  <parameter name="hw_cts" value="false" />
   <parameter name="parity" value="NONE" />
+  <parameter name="rx_IRQ_Threshold" value="1" />
+  <parameter name="rx_fifo_LE" value="false" />
   <parameter name="simCharStream" value="" />
   <parameter name="simInteractiveInputEnable" value="false" />
   <parameter name="simInteractiveOutputEnable" value="false" />
   <parameter name="simTrueBaud" value="false" />
   <parameter name="stopBits" value="1" />
   <parameter name="syncRegDepth" value="2" />
+  <parameter name="timeout_value" value="4" />
+  <parameter name="timestamp_width" value="8" />
+  <parameter name="trans_pin" value="false" />
+  <parameter name="tx_IRQ_Threshold" value="1" />
+  <parameter name="tx_fifo_LE" value="false" />
   <parameter name="useCtsRts" value="false" />
   <parameter name="useEopRegister" value="false" />
   <parameter name="useRelativePathForSimFile" value="false" />
+  <parameter name="use_ext_timestamp" value="false" />
+  <parameter name="use_gap_detection" value="false" />
+  <parameter name="use_rx_fifo" value="true" />
+  <parameter name="use_status_bit_clear" value="false" />
+  <parameter name="use_timestamp" value="false" />
+  <parameter name="use_timout" value="false" />
+  <parameter name="use_tx_fifo" value="true" />
  </module>
  <module
    name="vectorblox_orca_0"
@@ -466,6 +650,15 @@ proc compose {} {
    kind="avalon"
    version="16.1"
    start="vectorblox_orca_0.data"
+   end="memory_data.avalon_anti_master_0">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="16.1"
+   start="vectorblox_orca_0.data"
    end="mm_bridge_0.s0">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x01000000" />
@@ -474,17 +667,8 @@ proc compose {} {
  <connection
    kind="avalon"
    version="16.1"
-   start="vectorblox_orca_0.data"
-   end="onchip_memory2_0.s2">
-  <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0000" />
-  <parameter name="defaultConnection" value="false" />
- </connection>
- <connection
-   kind="avalon"
-   version="16.1"
    start="vectorblox_orca_0.instruction"
-   end="onchip_memory2_0.s1">
+   end="memory_instruction.avalon_anti_master_0">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x0000" />
   <parameter name="defaultConnection" value="false" />
@@ -529,6 +713,12 @@ proc compose {} {
    kind="clock"
    version="16.1"
    start="clk_0.clk"
+   end="memory_instruction.clk" />
+ <connection kind="clock" version="16.1" start="clk_0.clk" end="memory_data.clk" />
+ <connection
+   kind="clock"
+   version="16.1"
+   start="clk_0.clk"
    end="onchip_memory2_0.clk1" />
  <connection
    kind="clock"
@@ -566,6 +756,16 @@ proc compose {} {
    version="16.1"
    start="clk_0.clk_reset"
    end="uart_0.reset" />
+ <connection
+   kind="reset"
+   version="16.1"
+   start="clk_0.clk_reset"
+   end="memory_instruction.reset" />
+ <connection
+   kind="reset"
+   version="16.1"
+   start="clk_0.clk_reset"
+   end="memory_data.reset" />
  <connection
    kind="reset"
    version="16.1"

@@ -320,11 +320,11 @@ architecture hpsfpga_arch of hpsfpga is
 			   uart_4_rxd                            : in    std_logic                       := 'X';             -- rxd
 			   uart_4_txd                            : out   std_logic;                                           -- txd
 			   uart_5_rxd                            : in    std_logic                       := 'X';             -- rxd
-			   uart_5_txd                            : out   std_logic                                           -- txd
-			   --uart_6_rxd                            : in    std_logic                       := 'X';             -- rxd
-			   --uart_6_txd                            : out   std_logic;                                           -- txd
-			   --uart_7_rxd                            : in    std_logic                       := 'X';             -- rxd
-			   --uart_7_txd                            : out   std_logic                                           -- txd
+			   uart_5_txd                            : out   std_logic;                                           -- txd
+			   uart_6_rxd                            : in    std_logic                       := 'X';             -- rxd
+			   uart_6_txd                            : out   std_logic;                                           -- txd
+			   uart_7_rxd                            : in    std_logic                       := 'X';             -- rxd
+			   uart_7_txd                            : out   std_logic                                           -- txd
 			
         );
 	end component hps_fpga;
@@ -353,10 +353,25 @@ architecture hpsfpga_arch of hpsfpga is
     signal w_pio_n_layer3_data_out_write           : std_logic_vector(64-1 downto 0);                      -- data_out_write
 
 
-        --------- UART ----------
-    signal w_uart_tx       : std_logic_vector(4-1 downto 0);
-    signal w_uart_rx       : std_logic_vector(4-1 downto 0);
+    signal w_uart_tx : std_logic_vector(4-1 downto 0);
+    signal w_uart_rx : std_logic_vector(4-1 downto 0);
+    
+    
+    --------- SW UART ----------
+    constant SW_UART_COUNT : natural := 8;
+    signal w_sw_uart_tx       : std_logic_vector(SW_UART_COUNT-1 downto 0);
+    signal w_sw_uart_rx       : std_logic_vector(SW_UART_COUNT-1 downto 0);
 
+    constant SW_UART_ID_SCREEN      : natural := 0; 
+    constant SW_UART_ID_LOW_LEVEL   : natural := 1; 
+    constant SW_UART_ID_PID_D       : natural := 2; 
+    constant SW_UART_ID_PID_A       : natural := 3; 
+    constant SW_UART_ID_PID_CUSTOM  : natural := 4; 
+    constant SW_UART_ID_ODOMETRY    : natural := 5; 
+    constant SW_UART_ID_LIDAR       : natural := 6; 
+    constant SW_UART_ID_TRAJ        : natural := 7; 
+
+    
 
     signal w_motor_value    : int16_t(6-1 downto 0);
     signal w_motor_current  : int24_t(6-1 downto 0);
@@ -423,11 +438,27 @@ begin
         clk     => FPGA_CLK1_50,
         reset   => r_reset,
 
+
+        ---------------------------------
+        ------ TO/FROM SOFTWARE/OS ------
+        ---------------------------------        
+        
         regs_data_in_value      => w_pio_n_layer1_data_in_value,
         regs_data_in_read       => w_pio_n_layer1_data_in_read,              
         regs_data_out_value     => w_pio_n_layer1_data_out_value,
         regs_data_out_write     => w_pio_n_layer1_data_out_write,
-
+        
+        sw_uart_tx(SW_UART_L1_ID_SCREEN)      => w_sw_uart_tx(SW_UART_ID_SCREEN),
+        sw_uart_tx(SW_UART_L1_ID_LOW_LEVEL)   => w_sw_uart_tx(SW_UART_ID_LOW_LEVEL),
+        
+        sw_uart_rx(SW_UART_L1_ID_SCREEN)      => w_sw_uart_rx(SW_UART_ID_SCREEN),
+        sw_uart_rx(SW_UART_L1_ID_LOW_LEVEL)   => w_sw_uart_rx(SW_UART_ID_LOW_LEVEL),
+                
+         
+        ---------------------------------
+        ---------- TO/FROM IOs ----------
+        ---------------------------------          
+        
         ----------- ADC (//) ---------
         ad0_sclk => ad0_sclk,
         ad0_miso => ad0_miso,
@@ -558,6 +589,7 @@ begin
 	    SW                  => SW,
 
 
+
         ---------------------------------
         -------- TO/FROM LAYER 2 --------
         ---------------------------------
@@ -585,11 +617,30 @@ begin
         clk     => FPGA_CLK1_50,
         reset   => r_reset,
 
+        ---------------------------------
+        ------ TO/FROM SOFTWARE/OS ------
+        ---------------------------------           
+
         regs_data_in_value      => w_pio_n_layer2_data_in_value,
         regs_data_in_read       => w_pio_n_layer2_data_in_read,              
         regs_data_out_value     => w_pio_n_layer2_data_out_value,
         regs_data_out_write     => w_pio_n_layer2_data_out_write,
 
+        
+        sw_uart_tx(SW_UART_L2_ID_PID_D)     => w_sw_uart_tx(SW_UART_ID_PID_D),
+        sw_uart_tx(SW_UART_L2_ID_PID_A)     => w_sw_uart_tx(SW_UART_ID_PID_A),
+        sw_uart_tx(SW_UART_L2_ID_PID_CUSTOM)=> w_sw_uart_tx(SW_UART_ID_PID_CUSTOM),
+        sw_uart_tx(SW_UART_L2_ID_ODOMETRY)  => w_sw_uart_tx(SW_UART_ID_ODOMETRY),
+        sw_uart_tx(SW_UART_L2_ID_LIDAR)     => w_sw_uart_tx(SW_UART_ID_LIDAR),
+
+        
+        sw_uart_rx(SW_UART_L2_ID_PID_D)     => w_sw_uart_rx(SW_UART_ID_PID_D),
+        sw_uart_rx(SW_UART_L2_ID_PID_A)     => w_sw_uart_rx(SW_UART_ID_PID_A),
+        sw_uart_rx(SW_UART_L2_ID_PID_CUSTOM)=> w_sw_uart_rx(SW_UART_ID_PID_CUSTOM),
+        sw_uart_rx(SW_UART_L2_ID_ODOMETRY)  => w_sw_uart_rx(SW_UART_ID_ODOMETRY),
+        sw_uart_rx(SW_UART_L2_ID_LIDAR)     => w_sw_uart_rx(SW_UART_ID_LIDAR),
+        
+        
         ---------------------------------
         -------- TO/FROM LAYER 1 --------
         ---------------------------------
@@ -645,11 +696,19 @@ begin
         clk     => FPGA_CLK1_50,
         reset   => r_reset,
 
+        ---------------------------------
+        ------ TO/FROM SOFTWARE/OS ------
+        ---------------------------------   
+        
         regs_data_in_value      => w_pio_n_layer3_data_in_value,
         regs_data_in_read       => w_pio_n_layer3_data_in_read,              
         regs_data_out_value     => w_pio_n_layer3_data_out_value,
         regs_data_out_write     => w_pio_n_layer3_data_out_write,
+  
+        sw_uart_tx(SW_UART_L3_ID_TRAJ)     => w_sw_uart_tx(SW_UART_ID_TRAJ),
 
+        sw_uart_rx(SW_UART_L3_ID_TRAJ)     => w_sw_uart_rx(SW_UART_ID_TRAJ),        
+        
         ---------------------------------
         -------- TO/FROM LAYER 2 --------
         ---------------------------------
@@ -763,31 +822,30 @@ begin
 	    hps_arm_hps_io_hps_io_i2c1_inst_SDA     =>  HPS_I2C1_SDAT ,     --                               hps_io_i2c1_inst_SDA
 	    hps_arm_hps_io_hps_io_i2c1_inst_SCL     =>  HPS_I2C1_SCLK ,     --                               hps_io_i2c1_inst_SCL
 	
-		 uart_0_rxd => w_uart_tx(0),
-		 uart_0_txd => open,
+		 uart_0_rxd => w_sw_uart_rx(0),
+		 uart_0_txd => w_sw_uart_tx(0),
 
-		 uart_1_rxd => w_uart_tx(1),
-		 uart_1_txd => open,
+		 uart_1_rxd => w_sw_uart_rx(1),
+		 uart_1_txd => w_sw_uart_tx(1),
 		 
-		 uart_2_rxd => w_uart_tx(2),
-		 uart_2_txd => open,
+		 uart_2_rxd => w_sw_uart_rx(2),
+		 uart_2_txd => w_sw_uart_tx(2),
 
-		 uart_3_rxd => w_uart_tx(3),
-		 uart_3_txd => open,
+		 uart_3_rxd => w_sw_uart_rx(3),
+		 uart_3_txd => w_sw_uart_tx(3),
 
-		 uart_4_rxd => w_uart_tx(3),
-		 uart_4_txd => open,
+		 uart_4_rxd => w_sw_uart_rx(4),
+		 uart_4_txd => w_sw_uart_tx(4),
 
-		 uart_5_rxd => w_uart_loop,
-		 uart_5_txd => w_uart_loop,
+		 uart_5_rxd => w_sw_uart_rx(5),
+		 uart_5_txd => w_sw_uart_tx(5),
 
-		 --uart_6_rxd => '0',
-		 --uart_6_txd => open,
+		 uart_6_rxd => w_sw_uart_rx(6),
+		 uart_6_txd => w_sw_uart_tx(6),
 
-		 --uart_7_rxd => '0',
-		 --uart_7_txd => open,		 
+		 uart_7_rxd => w_sw_uart_rx(7),
+		 uart_7_txd => w_sw_uart_tx(7),
 		 
-	
 	    -- HPS DDR3
 	    memory_mem_a                          =>  HPS_DDR3_ADDR ,                       --                memorymem_a
 	    memory_mem_ba                         =>  HPS_DDR3_BA ,                         --                mem_ba

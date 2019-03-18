@@ -7,6 +7,9 @@ use     work.types_pkg.all;
 
 package robot_layer_3_pkg is
 
+    constant SW_UART_L3_COUNT : natural := 1; 
+    constant SW_UART_L3_ID_TRAJ       : natural := 0; 
+
     component robot_layer_3 is
     generic (
         CLK_FREQUENCY_HZ : positive;
@@ -16,12 +19,19 @@ package robot_layer_3_pkg is
         clk                     : in  std_logic;             
         reset                   : in  std_logic;             
 
+       
+        ---------------------------------
+        ------ TO/FROM SOFTWARE/OS ------
+        ---------------------------------           
+                
         regs_data_in_value      : out  std_logic_vector(RegCnt*32-1 downto 0) := (others => '0'); 
         regs_data_in_read       : in std_logic_vector(RegCnt-1 downto 0);                       
         regs_data_out_value     : in std_logic_vector(RegCnt*32-1 downto 0);                    
         regs_data_out_write     : in std_logic_vector(RegCnt-1 downto 0);
 
-
+        sw_uart_tx : in  std_logic_vector(SW_UART_L3_COUNT-1 downto 0);
+        sw_uart_rx : out std_logic_vector(SW_UART_L3_COUNT-1 downto 0);        
+        
         ---------------------------------
         -------- TO/FROM LAYER 2 --------
         ---------------------------------

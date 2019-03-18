@@ -4,6 +4,11 @@
 
 export LM_LICENSE_FILE=
 
+cd ../sw/lidar
+make clean
+make
+
+cd ../../tools/
 
 cd ../orca/software/generic
 make clean
@@ -13,7 +18,6 @@ cd ../low_level
 make clean
 make
 
-
 cd ../../tools/
 rm orca.elf.qex
 ./elf2hex.sh ../software/generic/orca.elf
@@ -21,6 +25,9 @@ cp orca.elf.qex ../../quartus/system.hex
 
 ./elf2hex.sh ../software/low_level/orca.elf
 cp orca.elf.qex ../../quartus/system_ll.hex
+
+./elf2hex.sh ../../sw/lidar/lidar.elf
+cp lidar.elf.qex ../../quartus/lidar.hex
 
 #quartus_cdb --update_mif ../..//quartus/HPSFPGA.qpf
 #quartus_asm ../..//quartus/HPSFPGA.qpf

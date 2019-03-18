@@ -332,7 +332,7 @@
       }
       datum baseAddress
       {
-         value = "3296";
+         value = "3136";
          type = "String";
       }
    }
@@ -353,7 +353,7 @@
       }
       datum baseAddress
       {
-         value = "3264";
+         value = "3200";
          type = "String";
       }
    }
@@ -374,7 +374,7 @@
       }
       datum baseAddress
       {
-         value = "3232";
+         value = "3264";
          type = "String";
       }
    }
@@ -395,7 +395,7 @@
       }
       datum baseAddress
       {
-         value = "3200";
+         value = "3328";
          type = "String";
       }
    }
@@ -416,7 +416,7 @@
       }
       datum baseAddress
       {
-         value = "3168";
+         value = "3392";
          type = "String";
       }
    }
@@ -428,6 +428,14 @@
          type = "int";
       }
    }
+   element uart_6.irq
+   {
+      datum _tags
+      {
+         value = "";
+         type = "String";
+      }
+   }
    element uart_6.s1
    {
       datum _lockedAddress
@@ -437,7 +445,7 @@
       }
       datum baseAddress
       {
-         value = "3136";
+         value = "3456";
          type = "String";
       }
    }
@@ -458,16 +466,16 @@
       }
       datum baseAddress
       {
-         value = "3104";
+         value = "3520";
          type = "String";
       }
    }
 }
 ]]></parameter>
  <parameter name="clockCrossingAdapter" value="HANDSHAKE" />
- <parameter name="device" value="5CSEMA4U23C6" />
+ <parameter name="device" value="5CSEBA6U23I7" />
  <parameter name="deviceFamily" value="Cyclone V" />
- <parameter name="deviceSpeedGrade" value="6" />
+ <parameter name="deviceSpeedGrade" value="7" />
  <parameter name="fabricMode" value="QSYS" />
  <parameter name="generateLegacySim" value="false" />
  <parameter name="generationId" value="0" />
@@ -554,8 +562,16 @@
    internal="uart_5.external_connection"
    type="conduit"
    dir="end" />
- <interface name="uart_6" internal="uart_6.external_connection" />
- <interface name="uart_7" internal="uart_7.external_connection" />
+ <interface
+   name="uart_6"
+   internal="uart_6.external_connection"
+   type="conduit"
+   dir="end" />
+ <interface
+   name="uart_7"
+   internal="uart_7.external_connection"
+   type="conduit"
+   dir="end" />
  <module name="button_pio" kind="altera_avalon_pio" version="16.1" enabled="0">
   <parameter name="bitClearingEdgeCapReg" value="true" />
   <parameter name="bitModifyingOutReg" value="false" />
@@ -620,7 +636,7 @@
   <parameter name="ALTMEMPHY_COMPATIBLE_MODE" value="false" />
   <parameter name="AP_MODE" value="false" />
   <parameter name="AP_MODE_EN" value="0" />
-  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="6" />
+  <parameter name="AUTO_DEVICE_SPEEDGRADE" value="7" />
   <parameter name="AUTO_PD_CYCLES" value="0" />
   <parameter name="AUTO_POWERDN_EN" value="false" />
   <parameter name="AVL_DATA_WIDTH_PORT" value="32,32,32,32,32,32" />
@@ -1084,7 +1100,7 @@
   <parameter name="desired_sdmmc_clk_mhz" value="200.0" />
   <parameter name="desired_spi_m_clk_mhz" value="200.0" />
   <parameter name="desired_usb_mp_clk_mhz" value="200.0" />
-  <parameter name="device_name" value="5CSEMA4U23C6" />
+  <parameter name="device_name" value="5CSEBA6U23I7" />
   <parameter name="device_pll_info_manual">{320000000 1600000000} {320000000 1000000000} {800000000 400000000 400000000}</parameter>
   <parameter name="eosc1_clk_mhz" value="25.0" />
   <parameter name="eosc2_clk_mhz" value="25.0" />
@@ -1232,133 +1248,309 @@
    enabled="1">
   <parameter name="id" value="-1395322110" />
  </module>
- <module name="uart_0" kind="altera_avalon_uart" version="16.1" enabled="1">
+ <module name="uart_0" kind="fifoed_avalon_uart" version="13.2" enabled="1">
+  <parameter name="add_error_bits" value="false" />
   <parameter name="baud" value="115200" />
   <parameter name="clockRate" value="50000000" />
   <parameter name="dataBits" value="8" />
-  <parameter name="fixedBaud" value="true" />
+  <parameter name="driver_pass_error_bits" value="false" />
+  <parameter name="export_handshake" value="false" />
+  <parameter name="fifo_export_used" value="false" />
+  <parameter name="fifo_size_rx" value="32" />
+  <parameter name="fifo_size_tx" value="8" />
+  <parameter name="fixedBaud" value="false" />
+  <parameter name="gap_value" value="4" />
+  <parameter name="hw_cts" value="false" />
   <parameter name="parity" value="NONE" />
+  <parameter name="rx_IRQ_Threshold" value="1" />
+  <parameter name="rx_fifo_LE" value="false" />
   <parameter name="simCharStream" value="" />
   <parameter name="simInteractiveInputEnable" value="false" />
   <parameter name="simInteractiveOutputEnable" value="false" />
   <parameter name="simTrueBaud" value="false" />
   <parameter name="stopBits" value="1" />
   <parameter name="syncRegDepth" value="2" />
+  <parameter name="timeout_value" value="4" />
+  <parameter name="timestamp_width" value="8" />
+  <parameter name="trans_pin" value="false" />
+  <parameter name="tx_IRQ_Threshold" value="1" />
+  <parameter name="tx_fifo_LE" value="false" />
   <parameter name="useCtsRts" value="false" />
   <parameter name="useEopRegister" value="false" />
   <parameter name="useRelativePathForSimFile" value="false" />
+  <parameter name="use_ext_timestamp" value="false" />
+  <parameter name="use_gap_detection" value="false" />
+  <parameter name="use_rx_fifo" value="true" />
+  <parameter name="use_status_bit_clear" value="false" />
+  <parameter name="use_timestamp" value="false" />
+  <parameter name="use_timout" value="false" />
+  <parameter name="use_tx_fifo" value="false" />
  </module>
- <module name="uart_1" kind="altera_avalon_uart" version="16.1" enabled="1">
+ <module name="uart_1" kind="fifoed_avalon_uart" version="13.2" enabled="1">
+  <parameter name="add_error_bits" value="false" />
   <parameter name="baud" value="115200" />
   <parameter name="clockRate" value="50000000" />
   <parameter name="dataBits" value="8" />
-  <parameter name="fixedBaud" value="true" />
+  <parameter name="driver_pass_error_bits" value="false" />
+  <parameter name="export_handshake" value="false" />
+  <parameter name="fifo_export_used" value="false" />
+  <parameter name="fifo_size_rx" value="32" />
+  <parameter name="fifo_size_tx" value="8" />
+  <parameter name="fixedBaud" value="false" />
+  <parameter name="gap_value" value="4" />
+  <parameter name="hw_cts" value="false" />
   <parameter name="parity" value="NONE" />
+  <parameter name="rx_IRQ_Threshold" value="1" />
+  <parameter name="rx_fifo_LE" value="false" />
   <parameter name="simCharStream" value="" />
   <parameter name="simInteractiveInputEnable" value="false" />
   <parameter name="simInteractiveOutputEnable" value="false" />
   <parameter name="simTrueBaud" value="false" />
   <parameter name="stopBits" value="1" />
   <parameter name="syncRegDepth" value="2" />
+  <parameter name="timeout_value" value="4" />
+  <parameter name="timestamp_width" value="8" />
+  <parameter name="trans_pin" value="false" />
+  <parameter name="tx_IRQ_Threshold" value="1" />
+  <parameter name="tx_fifo_LE" value="false" />
   <parameter name="useCtsRts" value="false" />
   <parameter name="useEopRegister" value="false" />
   <parameter name="useRelativePathForSimFile" value="false" />
+  <parameter name="use_ext_timestamp" value="false" />
+  <parameter name="use_gap_detection" value="false" />
+  <parameter name="use_rx_fifo" value="true" />
+  <parameter name="use_status_bit_clear" value="false" />
+  <parameter name="use_timestamp" value="false" />
+  <parameter name="use_timout" value="false" />
+  <parameter name="use_tx_fifo" value="false" />
  </module>
- <module name="uart_2" kind="altera_avalon_uart" version="16.1" enabled="1">
+ <module name="uart_2" kind="fifoed_avalon_uart" version="13.2" enabled="1">
+  <parameter name="add_error_bits" value="false" />
   <parameter name="baud" value="115200" />
   <parameter name="clockRate" value="50000000" />
   <parameter name="dataBits" value="8" />
-  <parameter name="fixedBaud" value="true" />
+  <parameter name="driver_pass_error_bits" value="false" />
+  <parameter name="export_handshake" value="false" />
+  <parameter name="fifo_export_used" value="false" />
+  <parameter name="fifo_size_rx" value="32" />
+  <parameter name="fifo_size_tx" value="8" />
+  <parameter name="fixedBaud" value="false" />
+  <parameter name="gap_value" value="4" />
+  <parameter name="hw_cts" value="false" />
   <parameter name="parity" value="NONE" />
+  <parameter name="rx_IRQ_Threshold" value="1" />
+  <parameter name="rx_fifo_LE" value="false" />
   <parameter name="simCharStream" value="" />
   <parameter name="simInteractiveInputEnable" value="false" />
   <parameter name="simInteractiveOutputEnable" value="false" />
   <parameter name="simTrueBaud" value="false" />
   <parameter name="stopBits" value="1" />
   <parameter name="syncRegDepth" value="2" />
+  <parameter name="timeout_value" value="4" />
+  <parameter name="timestamp_width" value="8" />
+  <parameter name="trans_pin" value="false" />
+  <parameter name="tx_IRQ_Threshold" value="1" />
+  <parameter name="tx_fifo_LE" value="false" />
   <parameter name="useCtsRts" value="false" />
   <parameter name="useEopRegister" value="false" />
   <parameter name="useRelativePathForSimFile" value="false" />
+  <parameter name="use_ext_timestamp" value="false" />
+  <parameter name="use_gap_detection" value="false" />
+  <parameter name="use_rx_fifo" value="true" />
+  <parameter name="use_status_bit_clear" value="false" />
+  <parameter name="use_timestamp" value="false" />
+  <parameter name="use_timout" value="false" />
+  <parameter name="use_tx_fifo" value="false" />
  </module>
- <module name="uart_3" kind="altera_avalon_uart" version="16.1" enabled="1">
+ <module name="uart_3" kind="fifoed_avalon_uart" version="13.2" enabled="1">
+  <parameter name="add_error_bits" value="false" />
   <parameter name="baud" value="115200" />
   <parameter name="clockRate" value="50000000" />
   <parameter name="dataBits" value="8" />
-  <parameter name="fixedBaud" value="true" />
+  <parameter name="driver_pass_error_bits" value="false" />
+  <parameter name="export_handshake" value="false" />
+  <parameter name="fifo_export_used" value="false" />
+  <parameter name="fifo_size_rx" value="32" />
+  <parameter name="fifo_size_tx" value="8" />
+  <parameter name="fixedBaud" value="false" />
+  <parameter name="gap_value" value="4" />
+  <parameter name="hw_cts" value="false" />
   <parameter name="parity" value="NONE" />
+  <parameter name="rx_IRQ_Threshold" value="1" />
+  <parameter name="rx_fifo_LE" value="false" />
   <parameter name="simCharStream" value="" />
   <parameter name="simInteractiveInputEnable" value="false" />
   <parameter name="simInteractiveOutputEnable" value="false" />
   <parameter name="simTrueBaud" value="false" />
   <parameter name="stopBits" value="1" />
   <parameter name="syncRegDepth" value="2" />
+  <parameter name="timeout_value" value="4" />
+  <parameter name="timestamp_width" value="8" />
+  <parameter name="trans_pin" value="false" />
+  <parameter name="tx_IRQ_Threshold" value="1" />
+  <parameter name="tx_fifo_LE" value="false" />
   <parameter name="useCtsRts" value="false" />
   <parameter name="useEopRegister" value="false" />
   <parameter name="useRelativePathForSimFile" value="false" />
+  <parameter name="use_ext_timestamp" value="false" />
+  <parameter name="use_gap_detection" value="false" />
+  <parameter name="use_rx_fifo" value="true" />
+  <parameter name="use_status_bit_clear" value="false" />
+  <parameter name="use_timestamp" value="false" />
+  <parameter name="use_timout" value="false" />
+  <parameter name="use_tx_fifo" value="false" />
  </module>
- <module name="uart_4" kind="altera_avalon_uart" version="16.1" enabled="1">
+ <module name="uart_4" kind="fifoed_avalon_uart" version="13.2" enabled="1">
+  <parameter name="add_error_bits" value="false" />
   <parameter name="baud" value="115200" />
   <parameter name="clockRate" value="50000000" />
   <parameter name="dataBits" value="8" />
-  <parameter name="fixedBaud" value="true" />
+  <parameter name="driver_pass_error_bits" value="false" />
+  <parameter name="export_handshake" value="false" />
+  <parameter name="fifo_export_used" value="false" />
+  <parameter name="fifo_size_rx" value="32" />
+  <parameter name="fifo_size_tx" value="8" />
+  <parameter name="fixedBaud" value="false" />
+  <parameter name="gap_value" value="4" />
+  <parameter name="hw_cts" value="false" />
   <parameter name="parity" value="NONE" />
+  <parameter name="rx_IRQ_Threshold" value="1" />
+  <parameter name="rx_fifo_LE" value="false" />
   <parameter name="simCharStream" value="" />
   <parameter name="simInteractiveInputEnable" value="false" />
   <parameter name="simInteractiveOutputEnable" value="false" />
   <parameter name="simTrueBaud" value="false" />
   <parameter name="stopBits" value="1" />
   <parameter name="syncRegDepth" value="2" />
+  <parameter name="timeout_value" value="4" />
+  <parameter name="timestamp_width" value="8" />
+  <parameter name="trans_pin" value="false" />
+  <parameter name="tx_IRQ_Threshold" value="1" />
+  <parameter name="tx_fifo_LE" value="false" />
   <parameter name="useCtsRts" value="false" />
   <parameter name="useEopRegister" value="false" />
   <parameter name="useRelativePathForSimFile" value="false" />
+  <parameter name="use_ext_timestamp" value="false" />
+  <parameter name="use_gap_detection" value="false" />
+  <parameter name="use_rx_fifo" value="true" />
+  <parameter name="use_status_bit_clear" value="false" />
+  <parameter name="use_timestamp" value="false" />
+  <parameter name="use_timout" value="false" />
+  <parameter name="use_tx_fifo" value="false" />
  </module>
- <module name="uart_5" kind="altera_avalon_uart" version="16.1" enabled="1">
+ <module name="uart_5" kind="fifoed_avalon_uart" version="13.2" enabled="1">
+  <parameter name="add_error_bits" value="false" />
   <parameter name="baud" value="115200" />
   <parameter name="clockRate" value="50000000" />
   <parameter name="dataBits" value="8" />
-  <parameter name="fixedBaud" value="true" />
+  <parameter name="driver_pass_error_bits" value="false" />
+  <parameter name="export_handshake" value="false" />
+  <parameter name="fifo_export_used" value="false" />
+  <parameter name="fifo_size_rx" value="32" />
+  <parameter name="fifo_size_tx" value="8" />
+  <parameter name="fixedBaud" value="false" />
+  <parameter name="gap_value" value="4" />
+  <parameter name="hw_cts" value="false" />
   <parameter name="parity" value="NONE" />
+  <parameter name="rx_IRQ_Threshold" value="1" />
+  <parameter name="rx_fifo_LE" value="false" />
   <parameter name="simCharStream" value="" />
   <parameter name="simInteractiveInputEnable" value="false" />
   <parameter name="simInteractiveOutputEnable" value="false" />
   <parameter name="simTrueBaud" value="false" />
   <parameter name="stopBits" value="1" />
   <parameter name="syncRegDepth" value="2" />
+  <parameter name="timeout_value" value="4" />
+  <parameter name="timestamp_width" value="8" />
+  <parameter name="trans_pin" value="false" />
+  <parameter name="tx_IRQ_Threshold" value="1" />
+  <parameter name="tx_fifo_LE" value="false" />
   <parameter name="useCtsRts" value="false" />
   <parameter name="useEopRegister" value="false" />
   <parameter name="useRelativePathForSimFile" value="false" />
+  <parameter name="use_ext_timestamp" value="false" />
+  <parameter name="use_gap_detection" value="false" />
+  <parameter name="use_rx_fifo" value="true" />
+  <parameter name="use_status_bit_clear" value="false" />
+  <parameter name="use_timestamp" value="false" />
+  <parameter name="use_timout" value="false" />
+  <parameter name="use_tx_fifo" value="false" />
  </module>
- <module name="uart_6" kind="altera_avalon_uart" version="16.1" enabled="0">
+ <module name="uart_6" kind="fifoed_avalon_uart" version="13.2" enabled="1">
+  <parameter name="add_error_bits" value="false" />
   <parameter name="baud" value="115200" />
   <parameter name="clockRate" value="50000000" />
   <parameter name="dataBits" value="8" />
-  <parameter name="fixedBaud" value="true" />
+  <parameter name="driver_pass_error_bits" value="false" />
+  <parameter name="export_handshake" value="false" />
+  <parameter name="fifo_export_used" value="false" />
+  <parameter name="fifo_size_rx" value="32" />
+  <parameter name="fifo_size_tx" value="8" />
+  <parameter name="fixedBaud" value="false" />
+  <parameter name="gap_value" value="4" />
+  <parameter name="hw_cts" value="false" />
   <parameter name="parity" value="NONE" />
+  <parameter name="rx_IRQ_Threshold" value="1" />
+  <parameter name="rx_fifo_LE" value="false" />
   <parameter name="simCharStream" value="" />
   <parameter name="simInteractiveInputEnable" value="false" />
   <parameter name="simInteractiveOutputEnable" value="false" />
   <parameter name="simTrueBaud" value="false" />
   <parameter name="stopBits" value="1" />
   <parameter name="syncRegDepth" value="2" />
+  <parameter name="timeout_value" value="4" />
+  <parameter name="timestamp_width" value="8" />
+  <parameter name="trans_pin" value="false" />
+  <parameter name="tx_IRQ_Threshold" value="1" />
+  <parameter name="tx_fifo_LE" value="false" />
   <parameter name="useCtsRts" value="false" />
   <parameter name="useEopRegister" value="false" />
   <parameter name="useRelativePathForSimFile" value="false" />
+  <parameter name="use_ext_timestamp" value="false" />
+  <parameter name="use_gap_detection" value="false" />
+  <parameter name="use_rx_fifo" value="true" />
+  <parameter name="use_status_bit_clear" value="false" />
+  <parameter name="use_timestamp" value="false" />
+  <parameter name="use_timout" value="false" />
+  <parameter name="use_tx_fifo" value="false" />
  </module>
- <module name="uart_7" kind="altera_avalon_uart" version="16.1" enabled="0">
+ <module name="uart_7" kind="fifoed_avalon_uart" version="13.2" enabled="1">
+  <parameter name="add_error_bits" value="false" />
   <parameter name="baud" value="115200" />
   <parameter name="clockRate" value="50000000" />
   <parameter name="dataBits" value="8" />
-  <parameter name="fixedBaud" value="true" />
+  <parameter name="driver_pass_error_bits" value="false" />
+  <parameter name="export_handshake" value="false" />
+  <parameter name="fifo_export_used" value="false" />
+  <parameter name="fifo_size_rx" value="32" />
+  <parameter name="fifo_size_tx" value="8" />
+  <parameter name="fixedBaud" value="false" />
+  <parameter name="gap_value" value="4" />
+  <parameter name="hw_cts" value="false" />
   <parameter name="parity" value="NONE" />
+  <parameter name="rx_IRQ_Threshold" value="1" />
+  <parameter name="rx_fifo_LE" value="false" />
   <parameter name="simCharStream" value="" />
   <parameter name="simInteractiveInputEnable" value="false" />
   <parameter name="simInteractiveOutputEnable" value="false" />
   <parameter name="simTrueBaud" value="false" />
   <parameter name="stopBits" value="1" />
   <parameter name="syncRegDepth" value="2" />
+  <parameter name="timeout_value" value="4" />
+  <parameter name="timestamp_width" value="8" />
+  <parameter name="trans_pin" value="false" />
+  <parameter name="tx_IRQ_Threshold" value="1" />
+  <parameter name="tx_fifo_LE" value="false" />
   <parameter name="useCtsRts" value="false" />
   <parameter name="useEopRegister" value="false" />
   <parameter name="useRelativePathForSimFile" value="false" />
+  <parameter name="use_ext_timestamp" value="false" />
+  <parameter name="use_gap_detection" value="false" />
+  <parameter name="use_rx_fifo" value="true" />
+  <parameter name="use_status_bit_clear" value="false" />
+  <parameter name="use_timestamp" value="false" />
+  <parameter name="use_timout" value="false" />
+  <parameter name="use_tx_fifo" value="false" />
  </module>
  <connection
    kind="avalon"
@@ -1447,7 +1639,7 @@
    start="hps_arm.h2f_lw_axi_master"
    end="uart_1.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0ce0" />
+  <parameter name="baseAddress" value="0x0c40" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -1456,7 +1648,7 @@
    start="hps_arm.h2f_lw_axi_master"
    end="uart_2.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0cc0" />
+  <parameter name="baseAddress" value="0x0c80" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -1465,7 +1657,7 @@
    start="hps_arm.h2f_lw_axi_master"
    end="uart_3.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0ca0" />
+  <parameter name="baseAddress" value="0x0cc0" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -1474,7 +1666,7 @@
    start="hps_arm.h2f_lw_axi_master"
    end="uart_4.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0c80" />
+  <parameter name="baseAddress" value="0x0d00" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -1483,7 +1675,7 @@
    start="hps_arm.h2f_lw_axi_master"
    end="uart_5.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0c60" />
+  <parameter name="baseAddress" value="0x0d40" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -1492,7 +1684,7 @@
    start="hps_arm.h2f_lw_axi_master"
    end="uart_6.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0c40" />
+  <parameter name="baseAddress" value="0x0d80" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -1501,7 +1693,7 @@
    start="hps_arm.h2f_lw_axi_master"
    end="uart_7.s1">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0c20" />
+  <parameter name="baseAddress" value="0x0dc0" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection

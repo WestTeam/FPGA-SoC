@@ -21,11 +21,22 @@ entity robot_layer_1 is
         clk                     : in  std_logic;             
         reset                   : in  std_logic;             
 
+        ---------------------------------
+        ------ TO/FROM SOFTWARE/OS ------
+        ---------------------------------        
+
         regs_data_in_value      : out  std_logic_vector(RegCnt*32-1 downto 0) := (others => '0'); 
         regs_data_in_read       : in std_logic_vector(RegCnt-1 downto 0);                       
         regs_data_out_value     : in std_logic_vector(RegCnt*32-1 downto 0);                    
         regs_data_out_write     : in std_logic_vector(RegCnt-1 downto 0);
 
+        sw_uart_tx : in  std_logic_vector(SW_UART_L1_COUNT-1 downto 0);
+        sw_uart_rx : out std_logic_vector(SW_UART_L1_COUNT-1 downto 0);        
+        
+        ---------------------------------
+        ---------- TO/FROM IOs ----------
+        ---------------------------------   
+        
         ----------- ADC (//) ---------
         ad0_sclk : out std_logic;
         ad0_miso : in  std_logic;
@@ -154,6 +165,7 @@ entity robot_layer_1 is
 
 	    ----------/ NANO SOC SW --------/
 	    SW                  : in    std_logic_vector(4-1 downto 0);
+
 
         ---------------------------------
         -------- TO/FROM LAYER 2 --------
@@ -295,10 +307,10 @@ architecture rtl of robot_layer_1 is
     signal w_i2c_1_sda_oe  : std_logic;
     signal w_i2c_1_reset   : std_logic;
 
-	 signal r_ll_uart_1_rs485 : std_logic := '1';
-	 signal w_ll_uart_1_rxd : std_logic;
-	 signal w_ll_uart_1_txd : std_logic;
-	 signal w_ll_uart_1_transmitting : std_logic;
+	 signal r_ll_uart_rs485 : std_logic := '1';
+	 signal w_ll_uart_rxd : std_logic;
+	 signal w_ll_uart_txd : std_logic;
+	 signal w_ll_uart_transmitting : std_logic;
 	 
 
 begin
@@ -761,7 +773,7 @@ begin
     m5_pwma  <= w_motor_out(5) and not w_motor_dir(5);
     m5_pwmb  <= w_motor_out(5) and w_motor_dir(5);
 
-    uart2_custom <= w_motor_out(5);
+
     --uart3_custom <= w_motor_out(5);
 
 
@@ -1008,16 +1020,60 @@ begin
 
     end generate;
 
-
-    --uart0_tx <= uart_tx(0);
-    uart0_tx <= uart_tx(0);
-    uart2_tx <= uart_tx(2);
-    uart3_tx <= uart_tx(3);
-
-    --uart_rx(0) <= uart_tx(0);--uart0_rx;
+    
+    --------------------------------------------------------
+    --! PHYSICAL UART CABLING
+    --! UART0 = NEXTION SCREEN  <==> SW_UART  
+    --! UART1 = SMART SERVO BUS <==> ORCA LOW LEVEL
+    --! UART2 = RPLIDAR A2      <==> LAYER2 
+    --! UART3 = UNUSED         
+    --------------------------------------------------------
+    
+    --------------------------------------------------------
+    ------------ UART 0 <==> SW_UART_L1_ID_SCREEN -------------
+    uart0_tx                           <= sw_uart_tx(SW_UART_L1_ID_SCREEN);
+    sw_uart_rx(SW_UART_L1_ID_SCREEN)   <= uart0_rx;
+    
     uart_rx(0) <= uart0_rx;
-    uart_rx(2) <= uart2_rx;
-    uart_rx(3) <= uart3_rx;
+    --UNUSED: uart_tx(0); 
+    --------------------------------------------------------
+    --------------------------------------------------------
+    
+    --------------------------------------------------------
+    ------------ UART 1 <==> ORCA LOW LEVEL -------------
+	 uart1_rx <= w_ll_uart_txd when r_ll_uart_rs485 = '1' and w_ll_uart_transmitting = '1'
+            else 'Z';
+					  		  
+	 w_ll_uart_rxd <= uart1_rx when r_ll_uart_rs485 = '0' or w_ll_uart_transmitting = '0' 
+                else '1';
+                
+	 uart1_tx   <= w_ll_uart_txd;
+	     
+    uart_rx(1) <= uart1_rx;
+    --UNUSED: uart_tx(1); 
+    --------------------------------------------------------        
+    --------------------------------------------------------
+    
+    --------------------------------------------------------
+    ---------------- UART 2 <==> LAYER2 --------------------
+    uart2_tx     <= uart_tx(2);
+    uart_rx(2)   <= uart2_rx;
+    
+    --! generate PWM for RPLIDAR A2 motocontrol PIN
+    uart2_custom <= w_motor_out(5);    
+    --------------------------------------------------------
+    --------------------------------------------------------
+
+    --------------------------------------------------------
+    ---------------- UART 3 <==> UNUSED --------------------
+    uart3_tx     <= uart_tx(3);
+    uart_rx(3)   <= uart3_rx;
+    
+    --! drive to GND
+    uart3_custom <= '0';    
+    --------------------------------------------------------
+    --------------------------------------------------------
+    
 
     i2c0_scl <= 'Z' when w_i2c_0_scl_oe = '0' else '0';
     i2c0_sda <= 'Z' when w_i2c_0_sda_oe = '0' else '0';
@@ -1027,12 +1083,6 @@ begin
     i2c1_sda <= 'Z' when w_i2c_1_sda_oe = '0' else '0';
 
 
-	 uart1_rx <= w_ll_uart_1_txd when r_ll_uart_1_rs485 = '1' and w_ll_uart_1_transmitting = '1' else 
-					 'Z';
-					  		  
-	 w_ll_uart_1_rxd <= uart1_rx when r_ll_uart_1_rs485 = '0' or w_ll_uart_1_transmitting = '0' else '1';
-	 uart1_tx 		  <= w_ll_uart_1_txd;
-	 
 
 
     b_orca_low_level: block
@@ -1178,6 +1228,10 @@ begin
         end process;
 
 
+        -- loopback for now
+        sw_uart_rx(SW_UART_L1_ID_LOW_LEVEL) <= sw_uart_tx(SW_UART_L1_ID_LOW_LEVEL);
+        
+        
 	    inst_orca_low_level : component system_ll
 	    port map (
 		    clk_clk                    => clk,                    --                 clk.clk
@@ -1194,9 +1248,9 @@ begin
 		    pio_data_out_value         => w_pio_data_out_value,         --                    .data_out_value
 		    pio_data_out_write         => open,         --                    .data_out_write
 		    reset_reset_n              => not reset,              --               reset.reset_n
-		    uart_0_external_rxd        => w_ll_uart_1_rxd,             
-		    uart_0_external_txd        => w_ll_uart_1_txd,     
-		    uart_0_external_transmitting=> w_ll_uart_1_transmitting
+		    uart_0_external_rxd        => w_ll_uart_rxd,             
+		    uart_0_external_txd        => w_ll_uart_txd,     
+		    uart_0_external_transmitting=> w_ll_uart_transmitting
 
 		    --uart_0_external_rxd        => CONNECTED_TO_uart_0_external_rxd,        --     uart_0_external.rxd
 		    --uart_0_external_txd        => CONNECTED_TO_uart_0_external_txd,        --                    .txd

@@ -10,6 +10,14 @@ package robot_layer_2_pkg is
     constant MOTOR_COUNT : natural := 6;
     constant QEI_COUNT   : natural := 4+1;
 
+    constant SW_UART_L2_COUNT : natural := 5; 
+    constant SW_UART_L2_ID_PID_D       : natural := 0; 
+    constant SW_UART_L2_ID_PID_A       : natural := 1; 
+    constant SW_UART_L2_ID_PID_CUSTOM  : natural := 2; 
+    constant SW_UART_L2_ID_ODOMETRY    : natural := 3; 
+    constant SW_UART_L2_ID_LIDAR       : natural := 4; 
+
+    
     component robot_layer_2 is
     generic (
         CLK_FREQUENCY_HZ : positive;
@@ -19,11 +27,20 @@ package robot_layer_2_pkg is
         clk                     : in  std_logic;             
         reset                   : in  std_logic;             
 
+        ---------------------------------
+        ------ TO/FROM SOFTWARE/OS ------
+        ---------------------------------           
+        
         regs_data_in_value      : out  std_logic_vector(RegCnt*32-1 downto 0) := (others => '0'); 
         regs_data_in_read       : in std_logic_vector(RegCnt-1 downto 0);                       
         regs_data_out_value     : in std_logic_vector(RegCnt*32-1 downto 0);                    
         regs_data_out_write     : in std_logic_vector(RegCnt-1 downto 0);
 
+     
+        sw_uart_tx : in  std_logic_vector(SW_UART_L2_COUNT-1 downto 0);
+        sw_uart_rx : out std_logic_vector(SW_UART_L2_COUNT-1 downto 0);        
+        
+        
         ---------------------------------
         -------- TO/FROM LAYER 1 --------
         ---------------------------------
