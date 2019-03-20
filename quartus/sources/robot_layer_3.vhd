@@ -167,14 +167,14 @@ begin
             MEMORY_SIZE_BYTES => 40*1024
         )
         port map (
-            clk_clk                 => clk,
-            reset_reset_n           => w_reset_n,
+            clk                     => clk,
+            reset_n                 => w_reset_n,
             pio_data_in_value       => w_pio_data_in_value,
             pio_data_in_read        => w_pio_data_in_read,
             pio_data_out_value      => w_pio_data_out_value,
             pio_data_out_write      => w_pio_data_out_write,
-            uart_0_external_rxd      => sw_uart_tx(SW_UART_L3_ID_TRAJ),
-            uart_0_external_txd      => sw_uart_rx(SW_UART_L3_ID_TRAJ)            
+            uart_0_rxd              => sw_uart_tx(SW_UART_L3_ID_TRAJ),
+            uart_0_txd              => sw_uart_rx(SW_UART_L3_ID_TRAJ)            
         );
 
     end block;

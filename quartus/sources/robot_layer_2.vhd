@@ -82,31 +82,20 @@ end entity;
 
 architecture rtl of robot_layer_2 is
 
---		 component system is
---			  port (
---					clk_clk            : in  std_logic                      := 'X';             -- clk
---					pio_data_in_value  : in  std_logic_vector(511 downto 0) := (others => 'X'); -- data_in_value
---					pio_data_in_read   : out std_logic_vector(15 downto 0);                     -- data_in_read
---					pio_data_out_value : out std_logic_vector(511 downto 0);                    -- data_out_value
---					pio_data_out_write : out std_logic_vector(15 downto 0);                     -- data_out_write
---					reset_reset_n      : in  std_logic                      := 'X';              -- reset_n
---				uart_0_external_rxd      : in  std_logic                      := 'X';             -- rxd
---				uart_0_external_txd      : out std_logic                                          -- txd
---			  );
---		 end component system;
-
-
     signal w_reset_n : std_logic;
 
 
     signal w_regs_data_in_value      : std_logic_vector(RegCnt*32-1 downto 0);
     signal w_regs_data_in_value_mask : std_logic_vector(RegCnt*4-1 downto 0) := (others=>'0');
 
---    constant MSG_SIZE : natural := 1+2+4*2+2+2;
+    signal w_pos_valid     : std_logic;
+    signal w_pos_id        : std_logic_vector(8-1 downto 0);
+    signal w_pos_teta      : std_logic_vector(16-1 downto 0);
+    signal w_pos_x         : std_logic_vector(16-1 downto 0);
+    signal w_pos_y         : std_logic_vector(16-1 downto 0);
 
---    signal r_uart_tx_data  : std_logic_vector(MSG_SIZE*8-1 downto 0);
---    signal w_uart_tx_valid : std_logic;
---    signal w_uart_tx_busy  : std_logic;
+
+
 
     signal w_odo_output : int32_t(2-1 downto 0);
 
@@ -163,14 +152,20 @@ begin
         sum_c_dist  <= w_pio_data_out_value((3+REGS_ODO_OUT_OFFSET)*32-1 downto (2+REGS_ODO_OUT_OFFSET)*32);
         sum_c_angle <= w_pio_data_out_value((4+REGS_ODO_OUT_OFFSET)*32-1 downto (3+REGS_ODO_OUT_OFFSET)*32);
 
-        pos_valid     <= std_norm_range(w_pio_data_out_value((5+REGS_ODO_OUT_OFFSET)*32-1 downto (4+REGS_ODO_OUT_OFFSET)*32))(0);
-        pos_id        <= std_norm_range(w_pio_data_out_value((5+REGS_ODO_OUT_OFFSET)*32-1 downto (4+REGS_ODO_OUT_OFFSET)*32))(16-1 downto 8);
-        pos_teta      <= std_norm_range(w_pio_data_out_value((5+REGS_ODO_OUT_OFFSET)*32-1 downto (4+REGS_ODO_OUT_OFFSET)*32))(32-1 downto 16);
-        pos_x         <= std_norm_range(w_pio_data_out_value((6+REGS_ODO_OUT_OFFSET)*32-1 downto (5+REGS_ODO_OUT_OFFSET)*32))(16-1 downto 0);
-        pos_y         <= std_norm_range(w_pio_data_out_value((6+REGS_ODO_OUT_OFFSET)*32-1 downto (5+REGS_ODO_OUT_OFFSET)*32))(32-1 downto 16);
+        w_pos_valid     <= std_norm_range(w_pio_data_out_value((5+REGS_ODO_OUT_OFFSET)*32-1 downto (4+REGS_ODO_OUT_OFFSET)*32))(0);
+        w_pos_id        <= std_norm_range(w_pio_data_out_value((5+REGS_ODO_OUT_OFFSET)*32-1 downto (4+REGS_ODO_OUT_OFFSET)*32))(16-1 downto 8);
+        w_pos_teta      <= std_norm_range(w_pio_data_out_value((5+REGS_ODO_OUT_OFFSET)*32-1 downto (4+REGS_ODO_OUT_OFFSET)*32))(32-1 downto 16);
+        w_pos_x         <= std_norm_range(w_pio_data_out_value((6+REGS_ODO_OUT_OFFSET)*32-1 downto (5+REGS_ODO_OUT_OFFSET)*32))(16-1 downto 0);
+        w_pos_y         <= std_norm_range(w_pio_data_out_value((6+REGS_ODO_OUT_OFFSET)*32-1 downto (5+REGS_ODO_OUT_OFFSET)*32))(32-1 downto 16);
         pos_sum_dist  <= w_pio_data_out_value((7+REGS_ODO_OUT_OFFSET)*32-1 downto (6+REGS_ODO_OUT_OFFSET)*32);
         pos_sum_angle <= w_pio_data_out_value((8+REGS_ODO_OUT_OFFSET)*32-1 downto (7+REGS_ODO_OUT_OFFSET)*32);
 
+        
+        pos_valid   <= w_pos_valid;
+        pos_id      <= w_pos_id;
+        pos_teta    <= w_pos_teta;
+        pos_x       <= w_pos_x;
+        pos_y       <= w_pos_y;
 
 
         --! disable warnings
@@ -184,14 +179,14 @@ begin
             MEMORY_SIZE_BYTES => 30*1024
         )
         port map (
-            clk_clk                 => clk,
-            reset_reset_n           => w_reset_n,
+            clk                     => clk,
+            reset_n                 => w_reset_n,
             pio_data_in_value       => w_pio_data_in_value,
             pio_data_in_read        => w_pio_data_in_read,
             pio_data_out_value      => w_pio_data_out_value,
             pio_data_out_write      => w_pio_data_out_write,
-			uart_0_external_rxd      => sw_uart_tx(SW_UART_L2_ID_ODOMETRY),--uart_rx(0),
-			uart_0_external_txd      => sw_uart_rx(SW_UART_L2_ID_ODOMETRY)--uart_tx(0)
+			uart_0_rxd              => sw_uart_tx(SW_UART_L2_ID_ODOMETRY),--uart_rx(0),
+			uart_0_txd              => sw_uart_rx(SW_UART_L2_ID_ODOMETRY)--uart_tx(0)
         );
 
     end block;
@@ -316,14 +311,14 @@ begin
                 MEMORY_SIZE_BYTES => 1024*20
             )
             port map (
-                clk_clk                 => clk,
-                reset_reset_n           => w_reset_n,
+                clk                     => clk,
+                reset_n                 => w_reset_n,
                 pio_data_in_value       => w_pio_data_in_value,
                 pio_data_in_read        => w_pio_data_in_read,
                 pio_data_out_value      => w_pio_data_out_value,
                 pio_data_out_write      => w_pio_data_out_write,
-                uart_0_external_rxd      => sw_uart_tx(SW_UART_L2_ID_PID_D+i),
-                uart_0_external_txd      => sw_uart_rx(SW_UART_L2_ID_PID_D+i)
+                uart_0_rxd              => sw_uart_tx(SW_UART_L2_ID_PID_D+i),
+                uart_0_txd              => sw_uart_rx(SW_UART_L2_ID_PID_D+i)
             );
         end generate;
     end block;
@@ -360,24 +355,44 @@ begin
 
 
     -- LIDAR BYPASS --
-    uart_tx(2) <= sw_uart_tx(SW_UART_L2_ID_LIDAR);
-    sw_uart_rx(SW_UART_L2_ID_LIDAR) <= uart_rx(2);
+    --uart_tx(2) <= sw_uart_tx(SW_UART_L2_ID_LIDAR);
+    --sw_uart_rx(SW_UART_L2_ID_LIDAR) <= uart_rx(2);
 
-    inst_lidar_rv : system_generic
-    generic map (
-        INIT_FILE => "lidar.hex",
-        MEMORY_SIZE_BYTES => 30*1024
-    )
-    port map (
-        clk_clk                 => clk,
-        reset_reset_n           => w_reset_n,
-        pio_data_in_value       => (others=>'0'),
-        pio_data_in_read        => open,
-        pio_data_out_value      => open,
-        pio_data_out_write      => open,
-        uart_0_external_rxd      => uart_rx(2),
-        uart_0_external_txd      => open
-    );
+    b_lidar: block
+        signal w_pio_data_in_value   :  std_logic_vector(511 downto 0) := (others=>'0');
+    begin
+
+--    uint8_t pos_valid; // IN  DATA
+--    uint8_t pos_id; // IN  DATA
+--    int16_t pos_teta; // IN  DATA
+--    int16_t pos_x; // IN  DATA
+--    int16_t pos_y; // IN  DATA
+
+
+        w_pio_data_in_value(3*32-1 downto 1*32) <=    w_pos_y
+                                                    & w_pos_x
+                                                    & w_pos_teta
+                                                    & w_pos_id
+                                                    & "0000000" & w_pos_valid;
+
+        inst_lidar_rv : system_generic
+        generic map (
+            INIT_FILE => "lidar.hex",
+            MEMORY_SIZE_BYTES => 30*1024
+        )
+        port map (
+            clk                     => clk,
+            reset_n                 => w_reset_n,
+            pio_data_in_value       => w_pio_data_in_value,
+            pio_data_in_read        => open,
+            pio_data_out_value      => open,
+            pio_data_out_write      => open,
+            uart_0_rxd              => uart_rx(2),
+            uart_0_txd              => uart_tx(2),
+            uart_1_rxd              => sw_uart_tx(SW_UART_L2_ID_LIDAR),
+            uart_1_txd              => sw_uart_rx(SW_UART_L2_ID_LIDAR)
+        );
+    end block;
 
 
 end architecture;

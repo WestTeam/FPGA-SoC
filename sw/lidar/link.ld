@@ -14,9 +14,9 @@
 OUTPUT_ARCH( "riscv" )
 MEMORY
 {
- IMEM : ORIGIN = 0x0, LENGTH = 24K 
- DMEM : ORIGIN = 24K, LENGTH = 3K 
- FMEM : ORIGIN = 27K, LENGTH = 5K
+ IMEM : ORIGIN = 0x0, LENGTH = 22K 
+ DMEM : ORIGIN = 22K, LENGTH = 4K 
+ FMEM : ORIGIN = 26K, LENGTH = 6K
 }
 /*----------------------------------------------------------------------*/
 /* Sections                                                             */

@@ -21,7 +21,7 @@
    {
       datum _sortIndex
       {
-         value = "6";
+         value = "8";
          type = "int";
       }
    }
@@ -42,7 +42,7 @@
    {
       datum _sortIndex
       {
-         value = "4";
+         value = "6";
          type = "int";
       }
    }
@@ -63,7 +63,7 @@
    {
       datum _sortIndex
       {
-         value = "9";
+         value = "3";
          type = "int";
       }
    }
@@ -84,7 +84,7 @@
    {
       datum _sortIndex
       {
-         value = "8";
+         value = "2";
          type = "int";
       }
    }
@@ -105,7 +105,7 @@
    {
       datum _sortIndex
       {
-         value = "3";
+         value = "5";
          type = "int";
       }
    }
@@ -160,7 +160,7 @@
    {
       datum _sortIndex
       {
-         value = "5";
+         value = "7";
          type = "int";
       }
    }
@@ -181,6 +181,94 @@
    {
       datum _originalDeviceFamily
       {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
          value = "Cyclone V";
          type = "String";
       }
@@ -230,94 +318,6 @@
       datum _originalDeviceFamily
       {
          value = "Cyclone IV E";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone IV E";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone IV E";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone IV E";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone IV E";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone IV E";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone IV E";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone V";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone IV E";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone IV E";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone IV E";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
-         value = "Cyclone V";
          type = "String";
       }
    }
@@ -325,7 +325,7 @@
    {
       datum _sortIndex
       {
-         value = "7";
+         value = "9";
          type = "int";
       }
    }
@@ -342,11 +342,32 @@
          type = "String";
       }
    }
+   element uart_1
+   {
+      datum _sortIndex
+      {
+         value = "10";
+         type = "int";
+      }
+   }
+   element uart_1.s1
+   {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
+      datum baseAddress
+      {
+         value = "1152";
+         type = "String";
+      }
+   }
    element vectorblox_orca_0
    {
       datum _sortIndex
       {
-         value = "2";
+         value = "4";
          type = "int";
       }
    }
@@ -398,8 +419,13 @@ proc compose {} {
  <interface name="reset" internal="clk_0.clk_in_reset" type="reset" dir="end" />
  <interface name="to_host" internal="vectorblox_orca_0.to_host" />
  <interface
-   name="uart_0_external"
+   name="uart_0"
    internal="uart_0.external_connection"
+   type="conduit"
+   dir="end" />
+ <interface
+   name="uart_1"
+   internal="uart_1.external_connection"
    type="conduit"
    dir="end" />
  <module name="clk_0" kind="clock_source" version="16.1" enabled="1">
@@ -626,6 +652,44 @@ proc compose {} {
   <parameter name="use_timout" value="false" />
   <parameter name="use_tx_fifo" value="true" />
  </module>
+ <module name="uart_1" kind="fifoed_avalon_uart" version="13.2" enabled="1">
+  <parameter name="add_error_bits" value="false" />
+  <parameter name="baud" value="115200" />
+  <parameter name="clockRate" value="50000000" />
+  <parameter name="dataBits" value="8" />
+  <parameter name="driver_pass_error_bits" value="false" />
+  <parameter name="export_handshake" value="false" />
+  <parameter name="fifo_export_used" value="false" />
+  <parameter name="fifo_size_rx" value="32" />
+  <parameter name="fifo_size_tx" value="32" />
+  <parameter name="fixedBaud" value="false" />
+  <parameter name="gap_value" value="4" />
+  <parameter name="hw_cts" value="false" />
+  <parameter name="parity" value="NONE" />
+  <parameter name="rx_IRQ_Threshold" value="1" />
+  <parameter name="rx_fifo_LE" value="false" />
+  <parameter name="simCharStream" value="" />
+  <parameter name="simInteractiveInputEnable" value="false" />
+  <parameter name="simInteractiveOutputEnable" value="false" />
+  <parameter name="simTrueBaud" value="false" />
+  <parameter name="stopBits" value="1" />
+  <parameter name="syncRegDepth" value="2" />
+  <parameter name="timeout_value" value="4" />
+  <parameter name="timestamp_width" value="8" />
+  <parameter name="trans_pin" value="false" />
+  <parameter name="tx_IRQ_Threshold" value="1" />
+  <parameter name="tx_fifo_LE" value="false" />
+  <parameter name="useCtsRts" value="false" />
+  <parameter name="useEopRegister" value="false" />
+  <parameter name="useRelativePathForSimFile" value="false" />
+  <parameter name="use_ext_timestamp" value="false" />
+  <parameter name="use_gap_detection" value="false" />
+  <parameter name="use_rx_fifo" value="true" />
+  <parameter name="use_status_bit_clear" value="false" />
+  <parameter name="use_timestamp" value="false" />
+  <parameter name="use_timout" value="false" />
+  <parameter name="use_tx_fifo" value="true" />
+ </module>
  <module
    name="vectorblox_orca_0"
    kind="vectorblox_orca"
@@ -705,6 +769,11 @@ proc compose {} {
   <parameter name="baseAddress" value="0x0440" />
   <parameter name="defaultConnection" value="false" />
  </connection>
+ <connection kind="avalon" version="16.1" start="mm_bridge_0.m0" end="uart_1.s1">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0480" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
  <connection kind="clock" version="16.1" start="clk_0.clk" end="jtag_uart_0.clk" />
  <connection kind="clock" version="16.1" start="clk_0.clk" end="mm_bridge_0.clk" />
  <connection kind="clock" version="16.1" start="clk_0.clk" end="pio_n_0.clk" />
@@ -715,6 +784,7 @@ proc compose {} {
    start="clk_0.clk"
    end="memory_instruction.clk" />
  <connection kind="clock" version="16.1" start="clk_0.clk" end="memory_data.clk" />
+ <connection kind="clock" version="16.1" start="clk_0.clk" end="uart_1.clk" />
  <connection
    kind="clock"
    version="16.1"
@@ -766,6 +836,11 @@ proc compose {} {
    version="16.1"
    start="clk_0.clk_reset"
    end="memory_data.reset" />
+ <connection
+   kind="reset"
+   version="16.1"
+   start="clk_0.clk_reset"
+   end="uart_1.reset" />
  <connection
    kind="reset"
    version="16.1"

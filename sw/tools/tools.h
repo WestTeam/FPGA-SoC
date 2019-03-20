@@ -9,12 +9,11 @@
 
 void delay(int cycles);
 
-
-
 void jtaguart_putc(char c);
 void jtaguart_puts(char* s);
 char jtaguart_getchar();
 
+void uart_rs232_select(uint8_t id);
 void uart_rs232_configure(uint16_t divisor);
 void uart_rs232_tx(uint8_t data);
 uint8_t uart_rs232_rx(uint8_t *data, uint32_t timeout);
@@ -45,7 +44,7 @@ typedef struct {
 
 uint16_t protocolCrc(uint8_t *msg, uint16_t size);
 
-
+#define CPU_FREQ_HZ 50000000
 #define CPU_CLK_PERIOD_NS 20
 #define MS_TO_CYCLES(x) (x*1000*1000/CPU_CLK_PERIOD_NS)
 

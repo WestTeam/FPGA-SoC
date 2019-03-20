@@ -12,14 +12,16 @@ entity system_generic is
         MEMORY_SIZE_BYTES   : positive := 65536
     );
     port (
-        clk_clk                 : in  std_logic                      := 'X';             -- clk
+        clk                     : in  std_logic                      := 'X';             -- clk
+        reset_n                 : in  std_logic                      := 'X';              -- reset_n
         pio_data_in_value       : in  std_logic_vector(511 downto 0) := (others => 'X'); -- data_in_value
         pio_data_in_read        : out std_logic_vector(15 downto 0);                     -- data_in_read
         pio_data_out_value      : out std_logic_vector(511 downto 0);                    -- data_out_value
         pio_data_out_write      : out std_logic_vector(15 downto 0);                     -- data_out_write
-        reset_reset_n           : in  std_logic                      := 'X';              -- reset_n
-		uart_0_external_rxd     : in  std_logic                      := 'X';             -- rxd
-		uart_0_external_txd     : out std_logic                                          -- txd
+		uart_0_rxd              : in  std_logic                      := '1';             -- rxd
+		uart_0_txd              : out std_logic;                                         -- txd
+		uart_1_rxd              : in  std_logic                      := '1';             -- rxd
+		uart_1_txd              : out std_logic                                          -- txd
     );
 end entity;
  
@@ -27,7 +29,7 @@ architecture rtl of system_generic is
 
 	component system is
 		port (
-			clk_clk                          : in  std_logic                      := 'X';             -- clk
+			clk_clk                              : in  std_logic                      := 'X';             -- clk
 			memory_data_address              : out std_logic_vector(23 downto 0);                     -- address
 			memory_data_burstcount           : out std_logic_vector(0 downto 0);                      -- burstcount
 			memory_data_read                 : out std_logic;                                         -- read
@@ -56,10 +58,12 @@ architecture rtl of system_generic is
 			pio_data_in_read                 : out std_logic_vector(15 downto 0);                     -- data_in_read
 			pio_data_out_value               : out std_logic_vector(511 downto 0);                    -- data_out_value
 			pio_data_out_write               : out std_logic_vector(15 downto 0);                     -- data_out_write
-			reset_reset_n                    : in  std_logic                      := 'X';             -- reset_n
-			uart_0_external_rxd              : in  std_logic                      := 'X';             -- rxd
-			uart_0_external_txd              : out std_logic                                          -- txd
-		);
+			reset_reset_n                          : in  std_logic                      := 'X';             -- reset_n
+			uart_0_rxd                       : in  std_logic                      := 'X';             -- rxd
+			uart_0_txd                       : out std_logic;                                          -- txd
+			uart_1_rxd                       : in  std_logic                      := 'X';             -- rxd
+			uart_1_txd                       : out std_logic             
+        );
 	end component system;
 
     signal w_memory_data_address              : std_logic_vector(23 downto 0);                     -- address
@@ -94,15 +98,15 @@ architecture rtl of system_generic is
 
 begin
 
-    w_reset <= not reset_reset_n;
+    w_reset <= not reset_n;
 
     w_memory_data_waitrequest <= '0';
 
     w_memory_instruction_waitrequest <= '0';
 
-    process(clk_clk) is
+    process(clk) is
     begin
-        if rising_edge(clk_clk) then
+        if rising_edge(clk) then
             w_memory_data_readdatavalid <= w_memory_data_readdatavalid;
             if w_memory_data_clken = '1' then
                 w_memory_data_readdatavalid <= w_memory_data_read;
@@ -122,7 +126,7 @@ begin
         MEMORY_SIZE_BYTES => MEMORY_SIZE_BYTES
     )
 	port map (
-		clk         => clk_clk,                                          --   clk1.clk
+		clk         => clk,                                          --   clk1.clk
 		address     => w_memory_data_address(ADDR_WIDTH+2-1 downto 2),    --     s1.address
 		clken       => w_memory_data_clken,      --       .clken
 		chipselect  => '1', --       .chipselect
@@ -139,7 +143,7 @@ begin
 		readdata2   => w_memory_instruction_readdata,   --       .readdata
 		writedata2  => w_memory_instruction_writedata,  --       .writedata
 		byteenable2 => w_memory_instruction_byteenable, --       .byteenable
-		clk2        => clk_clk,                                          --   clk2.clk
+		clk2        => clk,                                          --   clk2.clk
 		reset2      => w_reset,                   -- reset2.reset
 		reset_req2  => w_reset,               --       .reset_req
 		freeze      => '0'                                               -- (terminated)
@@ -149,8 +153,8 @@ begin
 
     inst_system : component system
     port map (
-        clk_clk                 => clk_clk,
-        reset_reset_n           => reset_reset_n,
+        clk_clk                     => clk,
+        reset_reset_n                 => reset_n,
 
 		memory_data_address              => w_memory_data_address,
 		memory_data_burstcount           => w_memory_data_burstcount,
@@ -182,8 +186,10 @@ begin
         pio_data_in_read        => pio_data_in_read,
         pio_data_out_value      => pio_data_out_value,
         pio_data_out_write      => pio_data_out_write,
-	    uart_0_external_rxd      => uart_0_external_rxd,
-	    uart_0_external_txd      => uart_0_external_txd
+	    uart_0_rxd              => uart_0_rxd,
+	    uart_0_txd              => uart_0_txd,
+	    uart_1_rxd              => uart_1_rxd,
+	    uart_1_txd              => uart_1_txd
     );
 
  

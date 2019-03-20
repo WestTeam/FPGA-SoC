@@ -6,10 +6,14 @@
  #include "tools.h"
 
 
-volatile uint32_t* uart_jtag = (volatile uint32_t*)(0x01000400);
+volatile uint32_t* uart_jtag = (uint32_t*)(0x01000400);
+
+
+
+volatile uint32_t* uart_rs232_0 = (volatile uint32_t*)(0x01000440);
+volatile uint32_t* uart_rs232_1 = (volatile uint32_t*)(0x01000480);
 
 volatile uint32_t* uart_rs232 = (volatile uint32_t*)(0x01000440);
-
 
 inline uint32_t get_time()
 {
@@ -17,6 +21,7 @@ inline uint32_t get_time()
 	asm volatile ("csrr %0,mtime":"=r"(val));
 	return val;
 }
+
 void delay(int cycles)
 {
 	unsigned start=get_time();
@@ -51,6 +56,14 @@ char jtaguart_getchar()
     else
         return '\0';
 
+}
+
+
+void uart_rs232_select(uint8_t id)
+{
+    uart_rs232 = uart_rs232_0;
+    if (id == 1)
+        uart_rs232 = uart_rs232_1;
 }
 
 #define UART_RS232_REG_DIVISOR 4
