@@ -5,7 +5,12 @@
 
 
 
-#define ABS(x) __fabsf(x)
+#define ABS(x) fabsf(x)
+
+
+#define DEG(x) ((x) * (180.0 / M_PI))
+#define RAD(x) ((x) * M_PI / 180.0)
+
 
 void delay(int cycles);
 

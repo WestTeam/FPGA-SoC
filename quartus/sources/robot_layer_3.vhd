@@ -112,7 +112,7 @@ begin
     begin
 
 
-        w_regs_data_in_value_mask((2+REGS_ORIGIN)*4-1 downto (1+REGS_ORIGIN)*4) <= "0011";
+        w_regs_data_in_value_mask((1+REGS_ORIGIN)*4-1 downto (REGS_ORIGIN)*4) <= "1100";
         w_regs_data_in_value_mask((REGS_ORIGIN+REGS_TRAJ_OUT_OFFSET+2-1)*4-1 downto (REGS_ORIGIN+REGS_TRAJ_OUT_OFFSET-1)*4) <= (others=>'1');
 
 

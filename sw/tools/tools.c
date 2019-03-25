@@ -440,7 +440,7 @@ void print_float(float f,uint8_t ret)
     
 }
 
-
+#if 0
 #define M_PI           3.14159265358979323846
 
 typedef union
@@ -1052,7 +1052,7 @@ __ieee754_atan2f (float y, float x)
 	}
 }
 
-
+#endif
 
 void *memset(void *dst, int value, size_t size)
 {

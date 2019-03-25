@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <limits.h>
+#include <math.h>
 
 #include <2wheels/trajectory_manager.h>
 #include <2wheels/trajectory_manager_core.h>
@@ -12,9 +13,9 @@
 
 #include "tools.h"
 
-#define M_PI           3.14159265358979323846
+//#define M_PI           3.14159265358979323846
 
-#define DEG(x) ((x) * (180.0 / M_PI))
+//#define DEG(x) ((x) * (180.0 / M_PI))
 
 struct pid_regs {
     uint8_t enable; // OUT DATA
@@ -137,7 +138,7 @@ typedef struct trajectory_data
     float x;
     float y;
     float teta_rad; // modulo PI
-    int16_t teta_deg; // (1 = 0.1deg)
+    int16_t teta_deg; // (1 = 0.01deg)
     uint8_t id;
 
 
@@ -185,13 +186,13 @@ void trajectory_update_position(volatile trajectory_mapping_t* regs, trajectory_
         {
             data->pos.pos_s16.x = pos_x;
             data->pos.pos_s16.y = pos_y;
-            data->pos.pos_s16.a = pos_teta/10;
+            data->pos.pos_s16.a = pos_teta/100;
 
             data->pos.pos_d.x = (float)pos_x;
             data->pos.pos_d.y = (float)pos_y;
             float fpos_teta = (float)pos_teta;
             //print_float(fpos_teta,1);
-            data->pos.pos_d.a = fpos_teta * (M_PI / 1800.0);
+            data->pos.pos_d.a = fpos_teta * (M_PI / 18000.0);
 
 
 
@@ -388,7 +389,7 @@ void trajectory_check_blocked(volatile trajectory_mapping_t* regs, trajectory_da
             //jtaguart_puts("\t");
             //print_float(c_diff,1);
 
-            if (fabs(m_diff) > fabs(c_diff) && fabs(m_diff) > 5.0)
+            if (fabsf(m_diff) > fabsf(c_diff) && fabsf(m_diff) > 5.0)
             {
                 blocked = 1;
             }

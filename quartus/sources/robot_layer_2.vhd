@@ -128,7 +128,7 @@ begin
     begin
 
 
-        w_regs_data_in_value_mask((1+2)*4-1 downto (0+2)*4) <= "0011";
+        w_regs_data_in_value_mask((1+2)*4-1 downto (0+2)*4) <= "1111";
         w_regs_data_in_value_mask((6+9)*4-1 downto (0+9)*4) <= (others=>'1');
 
         p_async: process(regs_data_out_value,w_pio_data_out_value,qei_value) is
@@ -139,8 +139,9 @@ begin
             --! we override the values for register 9 & 10 to give QEI inputs
             w_pio_data_in_value((8+2)*32-1 downto 8*32) <= qei_value(3) & qei_value(2) & qei_value(1) & qei_value(0);
 
+            w_regs_data_in_value((1+2)*32-1 downto (0+2)*32) <= w_pio_data_out_value((1+1)*32-1 downto (0+1)*32); 
 
-            w_regs_data_in_value((8+8)*32-1 downto (0+8)*32) <= w_pio_data_out_value((8+7)*32-1 downto (0+7)*32); 
+            w_regs_data_in_value((6+9)*32-1 downto (0+9)*32) <= w_pio_data_out_value((6+REGS_ODO_OUT_OFFSET)*32-1 downto (0+REGS_ODO_OUT_OFFSET)*32); 
             
         end process;
 
@@ -272,7 +273,7 @@ begin
             signal w_pid_override : std_logic;
         begin
 
-            w_regs_data_in_value_mask((1+REG_INDEX)*4-1 downto (REG_INDEX)*4) <= "0011";
+            w_regs_data_in_value_mask((1+REG_INDEX)*4-1 downto (REG_INDEX)*4) <= "1100";
             w_regs_data_in_value_mask((REG_COUNT+REG_INDEX)*4-1 downto (1+REG_INDEX)*4) <= (others=>'1');
 
             w_pid_override <= std_norm_range(regs_data_out_value((REG_INDEX+2)*32-1 downto (REG_INDEX+1)*32))(8);

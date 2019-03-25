@@ -12,27 +12,27 @@ typedef struct pid_mapping
     uint8_t reset;
     uint8_t pgm_id;
     uint8_t arg[2];
-    uint16_t freq_hz_cfg;
+    uint16_t freq_hz_cfg; // [0]
     uint16_t freq_hz_latest;
-    uint8_t enable;
+    uint8_t enable; // [1]
     uint8_t override;
     uint8_t inverted;
     uint8_t unused;
-    float P;
-    float I;
-    float D;
-    float speed;
-    float acc;
-    uint32_t sat;
-    union {
+    float P; // [2] 
+    float I; // [3]
+    float D; // [4]
+    float speed; // [5]
+    float acc; // [6]
+    uint32_t sat; // [7]
+    union { // [8]
         float f_measure;
         int32_t measure;
     };
-    union {
+    union { // [9]
         float f_target;
         int32_t target;
     };
-    int32_t output;
+    int32_t output; // [10]
 } __attribute__((packed)) pid_mapping_t;
 
 

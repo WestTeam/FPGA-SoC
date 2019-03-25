@@ -17,7 +17,7 @@ OBJDUMP=$(CROSS_COMPILE)objdump
 ARCH=RV32IMXmxp
 #-fdata-sections -ffunction-sections 
 CFLAGS= -m32 -Os -fno-delete-null-pointer-checks -fdata-sections -ffunction-sections  -g -march=$(ARCH) $(INC) -MD -Wall -Wno-strict-aliasing -std=gnu99 -msoft-float -mmuldiv
-LD_FLAGS= -m32 -march=$(ARCH) -static -nostartfiles -Wl,--gc-sections -Wl,--print-gc-sections
+LD_FLAGS= -m32 -lm -lc -march=$(ARCH) -static -nostartfiles -Wl,--gc-sections -Wl,--print-gc-sections
 # -Wl,--gc-sections -Wl,--print-gc-sections
 obj/:
 	mkdir -p obj/

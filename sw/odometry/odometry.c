@@ -1,42 +1,62 @@
 
- #include <string.h>
- #include <stdint.h>
- #include <limits.h>
+#include <string.h>
+#include <stdint.h>
+#include <limits.h>
+#include "tools.h"
 
- #include "tools.h"
+#include <math.h>
 
-#define M_PI           3.14159265358979323846
+//#define M_PI           3.14159265358979323846
 
-#define DEG(x) ((x) * (180.0 / M_PI))
+
+double rad_mod_pi(double teta)
+{
+    double ret = teta;
+    while (ret < -M_PI)
+        ret += (M_PI*2);
+
+    while (ret > M_PI)
+        ret -= (M_PI*2);
+
+    return ret;
+}
+
 
 typedef struct odo_mapping
 {
-    uint8_t reset;
+    uint8_t reset; // [0]
     uint8_t pgm_id;
     uint8_t arg[2];
-    uint16_t freq_hz_cfg;
-    uint16_t freq_hz_latest;
-    float c_wheel_axe_mm;
-    float c_wheel_mm_per_tick[2];
-    float m_wheel_axe_mm;
-    float m_wheel_mm_per_tick[2];
     union {
-        uint16_t c_qei_value[2];
-        float odo_sum_m_distance;
+        uint16_t freq_hz_cfg; // IN [1]
+        struct {
+            uint8_t odo_pos_cmd_ack; // OUT (used to ACK the Error insertion command on odo_pos*) 
+            uint8_t reserved; // OUT
+        };
     };
-    union {
-        uint16_t m_qei_value[2];
-        float odo_sum_m_angle;
+    uint16_t freq_hz_latest; // OUT
+
+    float c_wheel_axe_mm; // IN [2]
+    float c_wheel_mm_per_tick[2]; // IN [3]
+    float m_wheel_axe_mm; // IN [5]
+    float m_wheel_mm_per_tick[2]; // IN [6]
+    union { // [8]
+        uint16_t c_qei_value[2]; // IN
+        float odo_sum_m_distance; // OUT
     };
-    float odo_sum_c_distance;
-    float odo_sum_c_angle;
-    uint8_t odo_pos_valid;
-    uint8_t odo_pos_id;
-    int16_t odo_pos_teta;
-    int16_t odo_pos_x;
-    int16_t odo_pos_y;
-    float   odo_pos_sum_distance;
-    float   odo_pos_sum_angle;
+    union { // [9]
+        uint16_t m_qei_value[2]; // IN
+        float odo_sum_m_angle; // OUT
+    };
+    float odo_sum_c_distance; // OUT [10]
+    float odo_sum_c_angle; // OUT [11]
+    uint8_t odo_pos_valid; // OUT & IN [12]
+    uint8_t odo_pos_id; // OUT & IN
+    int16_t odo_pos_teta; // OUT & IN
+    int16_t odo_pos_x; // OUT & IN [13]
+    int16_t odo_pos_y; // OUT & IN
+    float   odo_pos_sum_distance; // OUT [14]
+    float   odo_pos_sum_angle; // OUT [15]
 } __attribute__((packed)) odo_mapping_t;
 
 
@@ -45,9 +65,9 @@ typedef struct odo_mapping
 
 typedef struct wheel_config
 {
-    float axe_mm;
-    float axe_mm_inv; // to avoid live division
-    float mm_per_tick[2]; // used to compute quickly the distance
+    double axe_mm;
+    double axe_mm_inv; // to avoid live division
+    double mm_per_tick[2]; // used to compute quickly the distance
 } wheel_config_t;
 
 
@@ -64,8 +84,8 @@ typedef struct odo_state
     wheel_config_t wheel;
 
     // OUTPUT RAW
-    float dist_sum;
-    float angle_sum;
+    double dist_sum;
+    double angle_sum;
 
 } odo_state_t;
 
@@ -77,13 +97,27 @@ typedef struct odo_data
     uint16_t freq_hz;
     uint32_t period_cycles;
     
-    // OUTPUT PROCESSED
-    float x;
-    float y;
-    float teta_rad; // modulo PI
-    int16_t teta_deg; // (1 = 0.1deg)
-    uint8_t id;
+    // POSITION from wheel encoder
+    float c_x;
+    float c_y;
+    float c_teta_rad;
+    float c_teta_deg;
+    
+    // ACCUMULATED ERROR received from register interface
+    uint8_t e_valid;
+    uint8_t e_id;
+    int32_t e_x;
+    int32_t e_y;
+    int32_t e_teta_deg; // (1 = 0.01deg)
+    double  e_teta_rad;
 
+
+    // OUTPUT PROCESSED (=POSITION wheel + ACCUMULATED ERROR)
+    double x;
+    double y;
+    double teta_rad; // modulo PI
+    int16_t teta_deg; // (1 = 0.01deg)
+    uint8_t id;
 
 } odo_data_t;
 
@@ -103,17 +137,16 @@ void odometry_init(volatile odo_mapping_t* regs, odo_data_t* data)
     data->cs.qei_latest[0] = regs->c_qei_value[0];
     data->cs.qei_latest[1] = regs->c_qei_value[1];
 
-    data->ms.wheel.axe_mm = 274.0;
-    data->ms.wheel.axe_mm_inv = 1.0/data->ms.wheel.axe_mm;
-    data->ms.wheel.mm_per_tick[0] = 1.08*72.0*M_PI/(1024.0*728.0/45.0);
-    data->ms.wheel.mm_per_tick[1] = 1.08*72.0*M_PI/(1024.0*728.0/45.0);
+    data->ms.wheel.axe_mm = 274.0l;
+    data->ms.wheel.axe_mm_inv = 1.0l/(double)data->ms.wheel.axe_mm;
+    data->ms.wheel.mm_per_tick[0] = 1.08l*72.0*M_PI/(1024.0*728.0/45.0);
+    data->ms.wheel.mm_per_tick[1] = 1.08l*72.0*M_PI/(1024.0*728.0/45.0);
 
-    data->cs.wheel.axe_mm = 188.0;
-    data->cs.wheel.axe_mm_inv = 1.0/data->cs.wheel.axe_mm;
-    data->cs.wheel.mm_per_tick[0] = 32.0*M_PI/(1024.0);
-    data->cs.wheel.mm_per_tick[1] = 32.0*M_PI/(1024.0);
+    data->cs.wheel.axe_mm = 188.0l;
+    data->cs.wheel.axe_mm_inv = 1.0l/data->cs.wheel.axe_mm;
+    data->cs.wheel.mm_per_tick[0] = 32.0l*M_PI/(1024.0);
+    data->cs.wheel.mm_per_tick[1] = 32.0l*M_PI/(1024.0);
  
-    
 }
 
 
@@ -123,31 +156,90 @@ void odometry_update_config(odo_data_t* data,volatile odo_mapping_t* regs)
 
     if (regs->m_wheel_axe_mm != 0.0 && regs->m_wheel_axe_mm != data->ms.wheel.axe_mm)
     {
-        data->ms.wheel.axe_mm = regs->m_wheel_axe_mm;
-        data->ms.wheel.axe_mm_inv = 1.0/regs->m_wheel_axe_mm;
+        data->ms.wheel.axe_mm = (double)regs->m_wheel_axe_mm;
+        data->ms.wheel.axe_mm_inv = 1.0l/(double)regs->m_wheel_axe_mm;
     }
     for (i=0;i<2;i++)
     {
-        if (regs->m_wheel_mm_per_tick[i] != 0.0 && regs->m_wheel_mm_per_tick[i] != data->ms.wheel.mm_per_tick[i])
-            data->ms.wheel.mm_per_tick[i] = regs->m_wheel_mm_per_tick[i];
+        if (regs->m_wheel_mm_per_tick[i] != 0.0 && (double)regs->m_wheel_mm_per_tick[i] != data->ms.wheel.mm_per_tick[i])
+            data->ms.wheel.mm_per_tick[i] = (double)regs->m_wheel_mm_per_tick[i];
     }
 
     if (regs->c_wheel_axe_mm != 0.0 && regs->c_wheel_axe_mm != data->cs.wheel.axe_mm)
     {
-        data->cs.wheel.axe_mm = regs->c_wheel_axe_mm;
-        data->cs.wheel.axe_mm_inv = 1.0/regs->c_wheel_axe_mm;
+        data->cs.wheel.axe_mm = (double)regs->c_wheel_axe_mm;
+        data->cs.wheel.axe_mm_inv = 1.0l/(double)regs->c_wheel_axe_mm;
     }
     for (i=0;i<2;i++)
     {
-        if (regs->c_wheel_mm_per_tick[i] != 0.0 && regs->c_wheel_mm_per_tick[i] != data->cs.wheel.mm_per_tick[i])
-            data->cs.wheel.mm_per_tick[i] = regs->c_wheel_mm_per_tick[i];
+        if (regs->c_wheel_mm_per_tick[i] != 0.0 && (double)regs->c_wheel_mm_per_tick[i] != data->cs.wheel.mm_per_tick[i])
+            data->cs.wheel.mm_per_tick[i] = (double)regs->c_wheel_mm_per_tick[i];
+    }
+}
+
+
+// update the registers associated to the Position
+void odo_update_pos_output(odo_data_t* data,volatile odo_mapping_t* regs)
+{
+    // we update the "output" copy we keep internally
+    data->teta_rad = rad_mod_pi(data->cs.angle_sum + data->e_teta_rad);
+    data->teta_deg = (int16_t)(round(DEG(data->e_teta_rad)*100.0));
+    data->x = data->c_x + (double)data->e_x;
+    data->y = data->c_y + (double)data->e_y;
+
+    // we update the output registers
+    regs->odo_pos_valid = 0;
+    regs->odo_pos_id = data->id++;
+    regs->odo_pos_teta = data->teta_deg;
+    regs->odo_pos_x = (int16_t)round(data->x);
+    regs->odo_pos_y = (int16_t)round(data->y);
+    regs->odo_pos_valid = 1;
+
+    regs->odo_pos_sum_distance = (float)data->cs.dist_sum;
+    regs->odo_pos_sum_angle = (float)(data->cs.angle_sum + data->e_teta_rad); // we sum the wheel encoder system deducted angle with the SW configured error
+}
+
+// get the "error" provided through registers so we can update our output position with this additional error
+void odo_update_pos_error_input(odo_data_t* data,volatile odo_mapping_t* regs)
+{
+    uint8_t pos_id = regs->odo_pos_id;
+    if (regs->odo_pos_valid == 1 && (pos_id != data->e_id || data->e_valid == 0))
+    {   
+        int16_t pos_teta = regs->odo_pos_teta; 
+        int16_t pos_x    = regs->odo_pos_x; 
+        int16_t pos_y    = regs->odo_pos_y; 
+
+        // we check again the pos_id is the same as well as valid, to make sure the data we read is ok.
+        if (regs->odo_pos_id == pos_id && regs->odo_pos_valid == 1)
+        {
+            data->e_x += (int32_t)pos_x;
+            data->e_y += (int32_t)pos_y;
+            data->e_teta_deg += (int32_t)pos_teta;
+            data->e_teta_rad = RAD(((double)data->e_teta_deg)/100.0);
+/*
+            jtaguart_puts("new error update\n");
+            print_int(data->e_x,1);
+            print_int(data->e_y,1);
+            print_int(data->e_teta_deg,1);
+            print_float(data->e_teta_rad,1);
+*/
+
+            data->e_valid = 1;
+            data->e_id = pos_id;
+            regs->odo_pos_cmd_ack = pos_id+1;
+
+            // we update the output position with the new received error
+            odo_update_pos_output(data,regs);
+
+//            print_int(data->teta_deg,1);
+//            print_float(data->teta_rad,1);
+        }
     }
 }
 
 
 
-
-void odo_update_state(odo_state_t* state,volatile uint16_t* regs_qei, volatile float* regs_sum_dist, volatile float *regs_sum_angle,uint8_t inv)
+void odo_update_state(odo_state_t* state,volatile uint16_t* regs_qei, volatile float* regs_sum_dist, volatile float *regs_sum_angle,double error_angle, uint8_t inv)
 {
     uint16_t qei[2];
 
@@ -188,31 +280,25 @@ void odo_update_state(odo_state_t* state,volatile uint16_t* regs_qei, volatile f
         state->qei_sum[1] += (int32_t)diff[1];
 
         // update SUM distance
-        state->dist_sum += ((float)diff[0]*state->wheel.mm_per_tick[0] + (float)diff[1]*state->wheel.mm_per_tick[1])*0.5;
+        state->dist_sum += ((double)diff[0]*state->wheel.mm_per_tick[0] + (double)diff[1]*state->wheel.mm_per_tick[1])*0.5;
 
         // output the value
-        *regs_sum_dist = state->dist_sum;
+        *regs_sum_dist = (float)state->dist_sum;
 
         // update SUM angle
-        state->angle_sum = ((float)state->qei_sum[1]*state->wheel.mm_per_tick[1]-(float)state->qei_sum[0]*state->wheel.mm_per_tick[0])*state->wheel.axe_mm_inv;
+        state->angle_sum = ((double)state->qei_sum[1]*state->wheel.mm_per_tick[1]-(double)state->qei_sum[0]*state->wheel.mm_per_tick[0])*state->wheel.axe_mm_inv;
 
+        double angle_output = state->angle_sum;
+        // in the case an error is provided on the angle, we need to sum it on the output reg
+        if (error_angle != 0.0)
+            angle_output += error_angle;
+        
         // output the value
-        *regs_sum_angle = state->angle_sum;
+        *regs_sum_angle = (float)angle_output;
     } 
 
 }
 
-float rad_mod_pi(float teta)
-{
-    float ret = teta;
-    while (ret < -M_PI)
-        ret += (M_PI*2);
-
-    while (ret > M_PI)
-        ret -= (M_PI*2);
-
-    return ret;
-}
 
 typedef struct {
     ProtocolHeader hdr;
@@ -269,10 +355,13 @@ int main()
 
         uart_rs232_buffer_tx_process(&tx_state);
 
+        // check input error update from sw
+        odo_update_pos_error_input(&odo,regs);
+
         // update motor encoders 
-        odo_update_state(&odo.ms,&regs->m_qei_value[0],&regs->odo_sum_m_distance,&regs->odo_sum_m_angle,0);
+        odo_update_state(&odo.ms,&regs->m_qei_value[0],&regs->odo_sum_m_distance,&regs->odo_sum_m_angle,0.0,0);
         // update coding wheel encoders
-        odo_update_state(&odo.cs,&regs->c_qei_value[0],&regs->odo_sum_c_distance,&regs->odo_sum_c_angle,1);
+        odo_update_state(&odo.cs,&regs->c_qei_value[0],&regs->odo_sum_c_distance,&regs->odo_sum_c_angle,odo.e_teta_rad,1);
 
         if (odo.freq_hz != regs->freq_hz_cfg)
         {
@@ -310,21 +399,23 @@ int main()
                     diff[0] = odo.cs.qei_sum[0]-odo.cs.qei_sum_latest[0];
                     diff[1] = odo.cs.qei_sum[1]-odo.cs.qei_sum_latest[1];
 
-                    float dist;
-                    float alpha;
+                    double dist;
+                    double alpha;
 
-                    dist = ((float)diff[0]*odo.cs.wheel.mm_per_tick[0] + (float)diff[1]*odo.cs.wheel.mm_per_tick[1])*0.5;
+                    dist = ((double)diff[0]*odo.cs.wheel.mm_per_tick[0] + (double)diff[1]*odo.cs.wheel.mm_per_tick[1])*0.5l;
                     
                     alpha = odo.teta_rad;
-                    alpha+= ((float)diff[1]*odo.cs.wheel.mm_per_tick[1] - (float)diff[0]*odo.cs.wheel.mm_per_tick[0])*0.5*odo.cs.wheel.axe_mm_inv;
+                    alpha+= ((double)diff[1]*odo.cs.wheel.mm_per_tick[1] - (double)diff[0]*odo.cs.wheel.mm_per_tick[0])*0.5*odo.cs.wheel.axe_mm_inv;
                     alpha = rad_mod_pi(alpha);
 
-                    odo.x += dist * __cosf(alpha);
-                    odo.y += dist * __sinf(alpha);
+                    odo.c_x += dist * cosf(alpha);
+                    odo.c_y += dist * sinf(alpha);
 
-                    odo.teta_rad = rad_mod_pi(odo.cs.angle_sum);
-                    odo.teta_deg = (int16_t)(DEG(odo.teta_rad)*10.0);
+                    odo.c_teta_rad = rad_mod_pi(odo.cs.angle_sum);
+                    odo.c_teta_deg = (int16_t)(round(DEG(odo.c_teta_rad)*100.0l));
 
+                    odo_update_pos_output(&odo,regs);
+/*
                     regs->odo_pos_valid = 0;
                     regs->odo_pos_id = odo.id++;
                     regs->odo_pos_teta = odo.teta_deg;
@@ -334,6 +425,7 @@ int main()
 
                     regs->odo_pos_sum_distance = odo.cs.dist_sum;
                     regs->odo_pos_sum_angle = odo.cs.angle_sum;
+*/
 
                     
                     odo.cs.qei_sum_latest[0] = odo.cs.qei_sum[0];
@@ -344,8 +436,8 @@ int main()
                     tx_buffer.c_qei_sum[1] = odo.cs.qei_sum[1];
                     tx_buffer.m_qei_sum[0] = odo.ms.qei_sum[0];
                     tx_buffer.m_qei_sum[1] = odo.ms.qei_sum[1];
-                    tx_buffer.x = odo.x;
-                    tx_buffer.y = odo.y;
+                    tx_buffer.x = odo.c_x;
+                    tx_buffer.y = odo.c_y;
                     tx_buffer.teta_rad = odo.cs.angle_sum;
 
                     tx_buffer.hdr.crc = protocolCrc((uint8_t*)&tx_buffer,sizeof(odo_debug));
@@ -378,6 +470,14 @@ int main()
         {
             switch (chr)
             {
+                case 's':
+                    print_int(regs->odo_pos_valid,1);
+                    print_int(regs->odo_pos_id,1);
+                    print_int(regs->odo_pos_x,1);
+                    print_int(regs->odo_pos_y,1);
+                    print_int(regs->odo_pos_teta,1);
+
+                    break;
 
                 case 'p':
                     jtaguart_puts("M W\n");
@@ -407,7 +507,7 @@ int main()
                     print_float(odo.x,1);
                     print_float(odo.y,1);
                     print_float(odo.teta_rad,1);
-                    print_float((float)odo.teta_deg/10.0,1);
+                    print_float((float)odo.teta_deg/100.0,1);
                     jtaguart_puts("Period:\n");
                     print_int((int32_t)period_latest,1);
                     jtaguart_puts("ID Pos:\n");

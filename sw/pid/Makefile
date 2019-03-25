@@ -17,7 +17,7 @@ OBJCOPY=$(CROSS_COMPILE)objcopy
 OBJDUMP=$(CROSS_COMPILE)objdump
 ARCH=RV32IMXmxp
 CFLAGS= -m32 -Os -fno-delete-null-pointer-checks -fdata-sections -ffunction-sections -g -march=$(ARCH) $(INC) -MD -Wall -std=gnu99 -msoft-float -mmuldiv
-LD_FLAGS= -m32 -Wl,--gc-sections -Wl,--print-gc-sections -march=$(ARCH) -static -nostartfiles
+LD_FLAGS= -m32 -lm -lc -Wl,--gc-sections -Wl,--print-gc-sections -march=$(ARCH) -static -nostartfiles
 
 obj/:
 	mkdir -p obj/
