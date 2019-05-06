@@ -166,7 +166,7 @@ uint8_t servo_ctrl_get_8b(uint8_t protocol, uint8_t id, uint8_t addr, uint8_t *d
 
         uart_rs232_tx_frame((uint8_t*)&msg,sizeof(msg));
         uart_rs232_rx(NULL,0);
-        rx_len = uart_rs232_rx_frame(rx_buf, RESPONSE_DELAY, 5000);
+        rx_len = uart_rs232_rx_frame(rx_buf, sizeof(rx_buf), RESPONSE_DELAY, 5000);
 
 
         error = feetech_msg_check(rx_buf,rx_len,sizeof(feetech_msg_get_response_8b_t));
@@ -218,7 +218,7 @@ uint8_t servo_ctrl_get_8b(uint8_t protocol, uint8_t id, uint8_t addr, uint8_t *d
         uart_rs232_tx_frame((uint8_t*)&msg,sizeof(msg));
         uart_rs232_rx(NULL,0);
 
-        rx_len = uart_rs232_rx_frame(rx_buf, RESPONSE_DELAY, 5000);
+        rx_len = uart_rs232_rx_frame(rx_buf, sizeof(rx_buf), RESPONSE_DELAY, 5000);
 
 
         error = dynamixel_msg_check(rx_buf,rx_len, sizeof(dynamixel_msg_get_response_8b_t));
@@ -311,7 +311,7 @@ uint8_t servo_ctrl_get_16b(uint8_t protocol, uint8_t id, uint8_t addr, uint16_t 
 
         uart_rs232_tx_frame((uint8_t*)&msg,sizeof(msg));
         uart_rs232_rx(NULL,0);
-        rx_len = uart_rs232_rx_frame(rx_buf, RESPONSE_DELAY, 5000);
+        rx_len = uart_rs232_rx_frame(rx_buf, sizeof(rx_buf), RESPONSE_DELAY, 5000);
 
         error = feetech_msg_check(rx_buf,rx_len,sizeof(feetech_msg_get_response_t));
 
@@ -363,7 +363,7 @@ uint8_t servo_ctrl_get_16b(uint8_t protocol, uint8_t id, uint8_t addr, uint16_t 
         uart_rs232_tx_frame((uint8_t*)&msg,sizeof(msg));
         uart_rs232_rx(NULL,0);
 
-        rx_len = uart_rs232_rx_frame(rx_buf, RESPONSE_DELAY, 5000);
+        rx_len = uart_rs232_rx_frame(rx_buf, sizeof(rx_buf), RESPONSE_DELAY, 5000);
 
 
         error = dynamixel_msg_check(rx_buf,rx_len, sizeof(dynamixel_msg_get_response_t));
@@ -469,7 +469,7 @@ uint8_t servo_ctrl_set_8b(uint8_t protocol, uint8_t on_hold, uint8_t id, uint8_t
         uart_rs232_tx_frame((uint8_t*)&msg,sizeof(msg));
         uart_rs232_rx(NULL,0);
 
-        rx_len = uart_rs232_rx_frame(rx_buf, RESPONSE_DELAY, 5000);
+        rx_len = uart_rs232_rx_frame(rx_buf, sizeof(rx_buf), RESPONSE_DELAY, 5000);
         error = feetech_msg_check(rx_buf,rx_len,sizeof(feetech_msg_status_t));
 
         if (error == 0)
@@ -515,7 +515,7 @@ uint8_t servo_ctrl_set_8b(uint8_t protocol, uint8_t on_hold, uint8_t id, uint8_t
         uart_rs232_tx_frame((uint8_t*)&msg,sizeof(msg));
         uart_rs232_rx(NULL,0);
 
-        rx_len = uart_rs232_rx_frame(rx_buf, RESPONSE_DELAY, 5000);
+        rx_len = uart_rs232_rx_frame(rx_buf, sizeof(rx_buf), RESPONSE_DELAY, 5000);
         error = dynamixel_msg_check(rx_buf,rx_len,sizeof(dynamixel_msg_status_t));
 
         if (error == 0)
@@ -605,7 +605,7 @@ uint8_t servo_ctrl_set_16b(uint8_t protocol, uint8_t on_hold, uint8_t id, uint8_
 
         uart_rs232_tx_frame((uint8_t*)&msg,sizeof(msg));
         uart_rs232_rx(NULL,0);
-        rx_len = uart_rs232_rx_frame(rx_buf, RESPONSE_DELAY, 5000);
+        rx_len = uart_rs232_rx_frame(rx_buf, sizeof(rx_buf), RESPONSE_DELAY, 5000);
 
         error = feetech_msg_check(rx_buf,rx_len,sizeof(feetech_msg_status_t));
 
@@ -656,7 +656,7 @@ uint8_t servo_ctrl_set_16b(uint8_t protocol, uint8_t on_hold, uint8_t id, uint8_
         uart_rs232_tx_frame((uint8_t*)&msg,sizeof(msg));
         uart_rs232_rx(NULL,0);
 
-        rx_len = uart_rs232_rx_frame(rx_buf, RESPONSE_DELAY, 5000);
+        rx_len = uart_rs232_rx_frame(rx_buf, sizeof(rx_buf), RESPONSE_DELAY, 5000);
 
 
         error = dynamixel_msg_check(rx_buf,rx_len,sizeof(dynamixel_msg_status_t));

@@ -142,10 +142,10 @@ entity robot_layer_1 is
         spi0_miso    : in  std_logic;
         spi0_ss      : in  std_logic;
 
-        spi1_sclk    : out std_logic;
-        spi1_mosi    : out std_logic;
+        spi1_sclk    : in  std_logic;
+        spi1_mosi    : in  std_logic;
         spi1_miso    : in  std_logic;
-        spi1_ss      : out std_logic;
+        spi1_ss      : in  std_logic;
 
         --! Use SPI1
         imu_ss       : out std_logic;
@@ -669,7 +669,7 @@ begin
     io_1 <= w_output_out(0);
     io_6 <= w_output_out(1);
     io_7 <= w_output_out(2);
-    --io_? <= w_output_out(3);
+    io_5 <= w_output_out(3);
 
 
 
@@ -897,6 +897,9 @@ begin
     w_qei_b(4) <= spi0_ss;
     w_qei_z(4) <= not spi0_mosi;
 
+    w_qei_a(5) <= spi1_sclk;
+    w_qei_b(5) <= spi1_ss;
+    w_qei_z(5) <= not spi1_mosi;
 
     qei_value <= w_qei_value;
     qei_ref   <= w_qei_ref;
@@ -909,6 +912,7 @@ begin
         signal r_ref    : std_logic;
 
         signal r_qei_value_simu : std_logic_vector(16-1 downto 0);
+
         function get_id_motor(qei_id : natural) return natural is
         begin
             if qei_id = 0 or qei_id = 2 then
@@ -919,7 +923,11 @@ begin
                 return 1;
             end if;
 
-            return 2;        
+            if qei_id = 4 then
+                return 2;
+            end if;
+
+            return 3;        
         end function;
 
         constant SIMU_ID_MOTOR : natural := get_id_motor(i);
@@ -1023,17 +1031,21 @@ begin
     
     --------------------------------------------------------
     --! PHYSICAL UART CABLING
-    --! UART0 = NEXTION SCREEN  <==> SW_UART  
-    --! UART1 = SMART SERVO BUS <==> ORCA LOW LEVEL
-    --! UART2 = RPLIDAR A2      <==> LAYER2 
-    --! UART3 = UNUSED         
+    --! UART0 TX = NEXTION SCREEN    <==> SW_UART  
+    --! UART0 RX = PROXIMITY SENSOR  <==> SW_UART  
+    --! UART1 = SMART SERVO BUS      <==> ORCA LOW LEVEL
+    --! UART2 = RPLIDAR A2           <==> LAYER2 
+    --! UART3 = BLUETOOTH            <==> SW_UART         
     --------------------------------------------------------
     
     --------------------------------------------------------
     ------------ UART 0 <==> SW_UART_L1_ID_SCREEN -------------
     uart0_tx                           <= sw_uart_tx(SW_UART_L1_ID_SCREEN);
-    sw_uart_rx(SW_UART_L1_ID_SCREEN)   <= uart0_rx;
+    sw_uart_rx(SW_UART_L1_ID_SCREEN)   <= '0';--uart0_rx;
     
+    sw_uart_rx(SW_UART_L1_ID_PROXIMITY)<= uart0_rx;
+    
+   
     uart_rx(0) <= uart0_rx;
     --UNUSED: uart_tx(0); 
     --------------------------------------------------------
@@ -1066,7 +1078,9 @@ begin
 
     --------------------------------------------------------
     ---------------- UART 3 <==> UNUSED --------------------
-    uart3_tx     <= uart_tx(3);
+    uart3_tx     <= sw_uart_tx(SW_UART_L1_ID_BLUETOOTH);--uart_tx(3);
+    sw_uart_rx(SW_UART_L1_ID_BLUETOOTH)   <= uart3_rx;
+    
     uart_rx(3)   <= uart3_rx;
     
     --! drive to GND

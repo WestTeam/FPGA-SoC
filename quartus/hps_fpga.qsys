@@ -336,6 +336,27 @@
          type = "String";
       }
    }
+   element uart_10
+   {
+      datum _sortIndex
+      {
+         value = "23";
+         type = "int";
+      }
+   }
+   element uart_10.s1
+   {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
+      datum baseAddress
+      {
+         value = "3712";
+         type = "String";
+      }
+   }
    element uart_2
    {
       datum _sortIndex
@@ -470,6 +491,48 @@
          type = "String";
       }
    }
+   element uart_8
+   {
+      datum _sortIndex
+      {
+         value = "21";
+         type = "int";
+      }
+   }
+   element uart_8.s1
+   {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
+      datum baseAddress
+      {
+         value = "3584";
+         type = "String";
+      }
+   }
+   element uart_9
+   {
+      datum _sortIndex
+      {
+         value = "22";
+         type = "int";
+      }
+   }
+   element uart_9.s1
+   {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
+      datum baseAddress
+      {
+         value = "3648";
+         type = "String";
+      }
+   }
 }
 ]]></parameter>
  <parameter name="clockCrossingAdapter" value="HANDSHAKE" />
@@ -543,6 +606,11 @@
    type="conduit"
    dir="end" />
  <interface
+   name="uart_10"
+   internal="uart_10.external_connection"
+   type="conduit"
+   dir="end" />
+ <interface
    name="uart_2"
    internal="uart_2.external_connection"
    type="conduit"
@@ -570,6 +638,16 @@
  <interface
    name="uart_7"
    internal="uart_7.external_connection"
+   type="conduit"
+   dir="end" />
+ <interface
+   name="uart_8"
+   internal="uart_8.external_connection"
+   type="conduit"
+   dir="end" />
+ <interface
+   name="uart_9"
+   internal="uart_9.external_connection"
    type="conduit"
    dir="end" />
  <module name="button_pio" kind="altera_avalon_pio" version="16.1" enabled="0">
@@ -611,7 +689,7 @@
    kind="altera_jtag_avalon_master"
    version="16.1"
    enabled="0">
-  <parameter name="AUTO_DEVICE" value="5CSEMA4U23C6" />
+  <parameter name="AUTO_DEVICE" value="5CSEBA6U23I7" />
   <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone V" />
   <parameter name="AUTO_DEVICE_SPEEDGRADE" value="6" />
   <parameter name="COMPONENT_CLOCK" value="0" />
@@ -1155,7 +1233,7 @@
    kind="altera_jtag_avalon_master"
    version="16.1"
    enabled="0">
-  <parameter name="AUTO_DEVICE" value="5CSEMA4U23C6" />
+  <parameter name="AUTO_DEVICE" value="5CSEBA6U23I7" />
   <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone V" />
   <parameter name="AUTO_DEVICE_SPEEDGRADE" value="6" />
   <parameter name="COMPONENT_CLOCK" value="0" />
@@ -1287,6 +1365,44 @@
   <parameter name="use_tx_fifo" value="false" />
  </module>
  <module name="uart_1" kind="fifoed_avalon_uart" version="13.2" enabled="1">
+  <parameter name="add_error_bits" value="false" />
+  <parameter name="baud" value="115200" />
+  <parameter name="clockRate" value="50000000" />
+  <parameter name="dataBits" value="8" />
+  <parameter name="driver_pass_error_bits" value="false" />
+  <parameter name="export_handshake" value="false" />
+  <parameter name="fifo_export_used" value="false" />
+  <parameter name="fifo_size_rx" value="32" />
+  <parameter name="fifo_size_tx" value="8" />
+  <parameter name="fixedBaud" value="false" />
+  <parameter name="gap_value" value="4" />
+  <parameter name="hw_cts" value="false" />
+  <parameter name="parity" value="NONE" />
+  <parameter name="rx_IRQ_Threshold" value="1" />
+  <parameter name="rx_fifo_LE" value="false" />
+  <parameter name="simCharStream" value="" />
+  <parameter name="simInteractiveInputEnable" value="false" />
+  <parameter name="simInteractiveOutputEnable" value="false" />
+  <parameter name="simTrueBaud" value="false" />
+  <parameter name="stopBits" value="1" />
+  <parameter name="syncRegDepth" value="2" />
+  <parameter name="timeout_value" value="4" />
+  <parameter name="timestamp_width" value="8" />
+  <parameter name="trans_pin" value="false" />
+  <parameter name="tx_IRQ_Threshold" value="1" />
+  <parameter name="tx_fifo_LE" value="false" />
+  <parameter name="useCtsRts" value="false" />
+  <parameter name="useEopRegister" value="false" />
+  <parameter name="useRelativePathForSimFile" value="false" />
+  <parameter name="use_ext_timestamp" value="false" />
+  <parameter name="use_gap_detection" value="false" />
+  <parameter name="use_rx_fifo" value="true" />
+  <parameter name="use_status_bit_clear" value="false" />
+  <parameter name="use_timestamp" value="false" />
+  <parameter name="use_timout" value="false" />
+  <parameter name="use_tx_fifo" value="false" />
+ </module>
+ <module name="uart_10" kind="fifoed_avalon_uart" version="13.2" enabled="1">
   <parameter name="add_error_bits" value="false" />
   <parameter name="baud" value="115200" />
   <parameter name="clockRate" value="50000000" />
@@ -1552,6 +1668,82 @@
   <parameter name="use_timout" value="false" />
   <parameter name="use_tx_fifo" value="false" />
  </module>
+ <module name="uart_8" kind="fifoed_avalon_uart" version="13.2" enabled="1">
+  <parameter name="add_error_bits" value="false" />
+  <parameter name="baud" value="115200" />
+  <parameter name="clockRate" value="50000000" />
+  <parameter name="dataBits" value="8" />
+  <parameter name="driver_pass_error_bits" value="false" />
+  <parameter name="export_handshake" value="false" />
+  <parameter name="fifo_export_used" value="false" />
+  <parameter name="fifo_size_rx" value="32" />
+  <parameter name="fifo_size_tx" value="8" />
+  <parameter name="fixedBaud" value="false" />
+  <parameter name="gap_value" value="4" />
+  <parameter name="hw_cts" value="false" />
+  <parameter name="parity" value="NONE" />
+  <parameter name="rx_IRQ_Threshold" value="1" />
+  <parameter name="rx_fifo_LE" value="false" />
+  <parameter name="simCharStream" value="" />
+  <parameter name="simInteractiveInputEnable" value="false" />
+  <parameter name="simInteractiveOutputEnable" value="false" />
+  <parameter name="simTrueBaud" value="false" />
+  <parameter name="stopBits" value="1" />
+  <parameter name="syncRegDepth" value="2" />
+  <parameter name="timeout_value" value="4" />
+  <parameter name="timestamp_width" value="8" />
+  <parameter name="trans_pin" value="false" />
+  <parameter name="tx_IRQ_Threshold" value="1" />
+  <parameter name="tx_fifo_LE" value="false" />
+  <parameter name="useCtsRts" value="false" />
+  <parameter name="useEopRegister" value="false" />
+  <parameter name="useRelativePathForSimFile" value="false" />
+  <parameter name="use_ext_timestamp" value="false" />
+  <parameter name="use_gap_detection" value="false" />
+  <parameter name="use_rx_fifo" value="true" />
+  <parameter name="use_status_bit_clear" value="false" />
+  <parameter name="use_timestamp" value="false" />
+  <parameter name="use_timout" value="false" />
+  <parameter name="use_tx_fifo" value="false" />
+ </module>
+ <module name="uart_9" kind="fifoed_avalon_uart" version="13.2" enabled="1">
+  <parameter name="add_error_bits" value="false" />
+  <parameter name="baud" value="115200" />
+  <parameter name="clockRate" value="50000000" />
+  <parameter name="dataBits" value="8" />
+  <parameter name="driver_pass_error_bits" value="false" />
+  <parameter name="export_handshake" value="false" />
+  <parameter name="fifo_export_used" value="false" />
+  <parameter name="fifo_size_rx" value="32" />
+  <parameter name="fifo_size_tx" value="8" />
+  <parameter name="fixedBaud" value="false" />
+  <parameter name="gap_value" value="4" />
+  <parameter name="hw_cts" value="false" />
+  <parameter name="parity" value="NONE" />
+  <parameter name="rx_IRQ_Threshold" value="1" />
+  <parameter name="rx_fifo_LE" value="false" />
+  <parameter name="simCharStream" value="" />
+  <parameter name="simInteractiveInputEnable" value="false" />
+  <parameter name="simInteractiveOutputEnable" value="false" />
+  <parameter name="simTrueBaud" value="false" />
+  <parameter name="stopBits" value="1" />
+  <parameter name="syncRegDepth" value="2" />
+  <parameter name="timeout_value" value="4" />
+  <parameter name="timestamp_width" value="8" />
+  <parameter name="trans_pin" value="false" />
+  <parameter name="tx_IRQ_Threshold" value="1" />
+  <parameter name="tx_fifo_LE" value="false" />
+  <parameter name="useCtsRts" value="false" />
+  <parameter name="useEopRegister" value="false" />
+  <parameter name="useRelativePathForSimFile" value="false" />
+  <parameter name="use_ext_timestamp" value="false" />
+  <parameter name="use_gap_detection" value="false" />
+  <parameter name="use_rx_fifo" value="true" />
+  <parameter name="use_status_bit_clear" value="false" />
+  <parameter name="use_timestamp" value="false" />
+  <parameter name="use_timout" value="false" />
+  <parameter name="use_tx_fifo" value="false" />
+ </module>
  <connection
    kind="avalon"
    version="16.1"
@@ -1699,6 +1891,33 @@
  <connection
    kind="avalon"
    version="16.1"
+   start="hps_arm.h2f_lw_axi_master"
+   end="uart_8.s1">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0e00" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="16.1"
+   start="hps_arm.h2f_lw_axi_master"
+   end="uart_9.s1">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0e40" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="16.1"
+   start="hps_arm.h2f_lw_axi_master"
+   end="uart_10.s1">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x0e80" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="16.1"
    start="fpga_only_master.master"
    end="jtag_uart.avalon_jtag_slave">
   <parameter name="arbitrationPriority" value="1" />
@@ -1776,6 +1995,9 @@
  <connection kind="clock" version="16.1" start="clk_50.clk" end="uart_5.clk" />
  <connection kind="clock" version="16.1" start="clk_50.clk" end="uart_6.clk" />
  <connection kind="clock" version="16.1" start="clk_50.clk" end="uart_7.clk" />
+ <connection kind="clock" version="16.1" start="clk_50.clk" end="uart_8.clk" />
+ <connection kind="clock" version="16.1" start="clk_50.clk" end="uart_9.clk" />
+ <connection kind="clock" version="16.1" start="clk_50.clk" end="uart_10.clk" />
  <connection
    kind="clock"
    version="16.1"
@@ -1841,6 +2063,27 @@
    start="hps_arm.f2h_irq0"
    end="uart_7.irq">
   <parameter name="irqNumber" value="7" />
+ </connection>
+ <connection
+   kind="interrupt"
+   version="16.1"
+   start="hps_arm.f2h_irq0"
+   end="uart_8.irq">
+  <parameter name="irqNumber" value="8" />
+ </connection>
+ <connection
+   kind="interrupt"
+   version="16.1"
+   start="hps_arm.f2h_irq0"
+   end="uart_9.irq">
+  <parameter name="irqNumber" value="9" />
+ </connection>
+ <connection
+   kind="interrupt"
+   version="16.1"
+   start="hps_arm.f2h_irq0"
+   end="uart_10.irq">
+  <parameter name="irqNumber" value="10" />
  </connection>
  <connection
    kind="reset"
@@ -1932,6 +2175,21 @@
    version="16.1"
    start="clk_50.clk_reset"
    end="uart_7.reset" />
+ <connection
+   kind="reset"
+   version="16.1"
+   start="clk_50.clk_reset"
+   end="uart_8.reset" />
+ <connection
+   kind="reset"
+   version="16.1"
+   start="clk_50.clk_reset"
+   end="uart_9.reset" />
+ <connection
+   kind="reset"
+   version="16.1"
+   start="clk_50.clk_reset"
+   end="uart_10.reset" />
  <connection
    kind="reset"
    version="16.1"

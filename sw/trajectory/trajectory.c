@@ -495,7 +495,7 @@ int main()
         // update output to send target / config to PIDs
         trajectory_update_target(regs,&traj);
 
-#if 0
+
         if (chr != 0)
         {
             switch (chr)
@@ -508,7 +508,7 @@ int main()
                     print_int((int32_t)traj.pos.pos_s16.y,1);
                     print_int((int32_t)traj.pos.pos_s16.a,1);
                     print_float(traj.trj.position->pos_d.a,1);
-/*                    print_int(regs->odo.pos_teta,1);
+                    print_int(regs->odo.pos_teta,1);
                     print_int(regs->odo.pos_x,1);
                     print_int(regs->odo.pos_y,1);
                     print_float(regs->odo.sum_m_distance,1);
@@ -523,12 +523,11 @@ int main()
                     print_int((int32_t)regs->freq_hz_cfg,1);
                     print_float(traj.trj.target.pol.angle,1);
                     
-*/
                     print_float(traj.trj.d_win,1);
                     print_float(traj.trj.a_win_rad,1);
                     print_float(traj.trj.a_start_rad,1);
 
-/*
+
                     jtaguart_puts("Dist - Speed/Acc/Target\n");  
                     print_float(traj.qr_d.var_1st_ord_pos,1);
                     print_float(traj.qr_d.var_2nd_ord_pos,1);
@@ -538,7 +537,7 @@ int main()
                     print_float(traj.qr_a.var_1st_ord_pos,1);
                     print_float(traj.qr_a.var_2nd_ord_pos,1);
                     print_float(traj.cs_a.consign_value,1);
-*/
+
 
                     break;
 
@@ -550,7 +549,7 @@ int main()
             }
             chr = 0;
         }  
-#endif      
+
 
 
     }

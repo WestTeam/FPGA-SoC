@@ -1107,6 +1107,10 @@ set_instance_assignment -name GLOBAL_SIGNAL OFF -to inst_hps|hps_arm|hps_io|bord
 set_instance_assignment -name GLOBAL_SIGNAL OFF -to inst_hps|hps_arm|hps_io|border|hps_sdram_inst|p0|umemphy|ureset|phy_reset_n -entity hpsfpga -tag __hps_sdram_p0
 set_instance_assignment -name ENABLE_BENEFICIAL_SKEW_OPTIMIZATION_FOR_NON_GLOBAL_CLOCKS ON -to inst_hps|hps_arm|hps_io|border|hps_sdram_inst -entity hpsfpga -tag __hps_sdram_p0
 
+set_global_assignment -name VHDL_FILE sources/system_generic_pkg.vhd
+set_global_assignment -name VHDL_FILE sources/system_generic_memory_pkg.vhd
+set_global_assignment -name VERILOG_FILE sources/system_generic_memory.v
+set_global_assignment -name VHDL_FILE sources/system_generic.vhd
 set_global_assignment -name QSYS_FILE sources/system_ll.qsys
 set_global_assignment -name QSYS_FILE sources/system.qsys
 set_global_assignment -name VHDL_FILE HPSFPGA.vhd

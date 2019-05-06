@@ -133,9 +133,9 @@ void uart_rs232_tx_frame(uint8_t *data, uint32_t len)
 
 }
 
-uint32_t uart_rs232_rx_frame(uint8_t *data, uint32_t timeout_sof, uint32_t timeout_eof)
+uint32_t uart_rs232_rx_frame(uint8_t *data, uint16_t buffer_size,uint32_t timeout_sof, uint32_t timeout_eof)
 {
-    uint32_t len = 0;
+    uint16_t len = 0;
     uint8_t error;
 
     error = uart_rs232_rx(&data[len],timeout_sof);
@@ -146,7 +146,7 @@ uint32_t uart_rs232_rx_frame(uint8_t *data, uint32_t timeout_sof, uint32_t timeo
     do {
         len++;
         error = uart_rs232_rx(&data[len],timeout_eof);
-    } while (error == 0);
+    } while (error == 0 && len < buffer_size);
 
     return len;
 }

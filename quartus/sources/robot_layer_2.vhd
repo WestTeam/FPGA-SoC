@@ -99,7 +99,29 @@ architecture rtl of robot_layer_2 is
 
     signal w_odo_output : int32_t(2-1 downto 0);
 
-    constant PID_COUNT : natural := 3;
+
+    function get_pid_reg_count(pid_id : natural) return natural is
+    begin
+        if pid_id < 2 then
+            return 11;
+
+        else
+            return 11+2;
+        end if;
+    end function;
+
+    function get_pid_reg_index(pid_id : natural) return natural is
+        variable ret : integer;
+    begin
+        ret := 15;
+        for i in 0 to pid_id-1 loop
+            ret := ret + get_pid_reg_count(i);
+        end loop;
+        return ret;
+    end function;
+
+
+    constant PID_COUNT : natural := 4;
 
     signal w_pid_en         : std_logic_vector(PID_COUNT-1 downto 0);
     signal w_pid_acc        : int32_t(PID_COUNT-1 downto 0);
@@ -196,43 +218,52 @@ begin
 
 
 
-    b_carroussel: block
-        signal r_position : std_logic_vector(32-1 downto 0);
-        signal r_ref      : std_logic_vector(32-1 downto 0);
-        signal r_qei_last : std_logic_vector(16-1 downto 0);
-        constant REGS_CARROUSSEL_REF_OFFSET : natural := 48;
+    b_custom_ref: block
     begin
-
-        w_regs_data_in_value_mask((REGS_CARROUSSEL_REF_OFFSET+1)*4-1 downto (REGS_CARROUSSEL_REF_OFFSET)*4) <= (others=>'1');
-        w_regs_data_in_value((REGS_CARROUSSEL_REF_OFFSET+1)*32-1 downto (REGS_CARROUSSEL_REF_OFFSET)*32) <= r_ref;
-
-        p_sync: process(clk,reset) is
-            variable v_diff : integer;
+        g_ref: for i in 0 to PID_COUNT-2-1 generate
+            signal r_position : std_logic_vector(32-1 downto 0);
+            signal r_ref      : std_logic_vector(32-1 downto 0);
+            signal r_qei_last : std_logic_vector(16-1 downto 0);
+            constant REGS_CUSTOM_REF_OFFSET : natural := get_pid_reg_index(i+2)+11;--48;
         begin
-            if reset = '1' then
-                r_position <= (others=>'0');
-                r_ref      <= (others=>'0');
-                r_qei_last <= (others=>'0');
-            elsif rising_edge(clk) then
-                r_qei_last <= qei_value(4);
-                if qei_value(4) /= r_qei_last then
-                    v_diff := to_integer(unsigned(qei_value(4)))-to_integer(unsigned(r_qei_last));
-                    if v_diff >= 2**15 then
-                        v_diff := v_diff - 2**16;                        
-                    end if;
-                    if v_diff <= -2**15 then
-                        v_diff := v_diff + 2**16;                        
-                    end if;
-                    r_position <= std_logic_vector(signed(r_position)+to_signed(v_diff,32));
-                end if;
-                if qei_ref(4) = '1' then
-                    r_ref <= r_position;
-                end if;
-            end if;
-        end process;
 
-        w_pid_measure(2) <= r_position;
+            w_regs_data_in_value_mask((REGS_CUSTOM_REF_OFFSET+1)*4-1 downto (REGS_CUSTOM_REF_OFFSET)*4) <= (others=>'1');
+            w_regs_data_in_value((REGS_CUSTOM_REF_OFFSET+1)*32-1 downto (REGS_CUSTOM_REF_OFFSET)*32) <= r_ref;
 
+            p_sync: process(clk,reset) is
+                variable v_diff : integer;
+            begin
+                if reset = '1' then
+                    r_position <= (others=>'0');
+                    r_ref      <= (others=>'0');
+                    r_qei_last <= (others=>'0');
+                elsif rising_edge(clk) then
+
+                    -- in the case the sw needs to reset/init the reference point, we listen to writes
+                    if regs_data_out_write(REGS_CUSTOM_REF_OFFSET) = '1' then
+                        r_ref <= regs_data_out_value((REGS_CUSTOM_REF_OFFSET+1)*32-1 downto (REGS_CUSTOM_REF_OFFSET)*32);
+                    end if;
+
+                    r_qei_last <= qei_value(4+i);
+                    if qei_value(4+i) /= r_qei_last then
+                        v_diff := to_integer(unsigned(qei_value(4+i)))-to_integer(unsigned(r_qei_last));
+                        if v_diff >= 2**15 then
+                            v_diff := v_diff - 2**16;                        
+                        end if;
+                        if v_diff <= -2**15 then
+                            v_diff := v_diff + 2**16;                        
+                        end if;
+                        r_position <= std_logic_vector(signed(r_position)+to_signed(v_diff,32));
+                    end if;
+                    if qei_ref(4+i) = '1' then
+                        r_ref <= r_position;
+                    end if;
+                end if;
+            end process;
+
+            w_pid_measure(2+i) <= r_position;
+
+        end generate;
     end block;
 
     w_pid_measure(0) <= w_odo_output(0);
@@ -257,12 +288,16 @@ begin
     w_pid_speed(2)      <= (others=>'0');
     w_pid_target(2)     <= (others=>'0');  
     
+    w_pid_en(3)         <= '0';
+    w_pid_acc(3)        <= (others=>'0');
+    w_pid_speed(3)      <= (others=>'0');
+    w_pid_target(3)     <= (others=>'0');  
 
     b_motor_pid: block
     begin
         g_motor: for i in 0 to PID_COUNT-1 generate
-            constant REG_COUNT : natural := 11;
-            constant REG_INDEX : natural := 15+REG_COUNT*i;
+            constant REG_COUNT : natural := get_pid_reg_count(i);--11;
+            constant REG_INDEX : natural := get_pid_reg_index(i);--15+REG_COUNT*i;
             constant REG_MEASURE_INDEX : natural := 9;
             constant REG_OUTPUT_INDEX : natural := 11;
             signal w_pio_data_in_value   :  std_logic_vector(511 downto 0) := (others=>'0');
@@ -281,7 +316,7 @@ begin
             p_async: process(regs_data_out_value,w_pio_data_out_value,w_pid_measure,w_pid_override) is
             begin
                 --! in the case the measure is uint32_t instead of float, arg[0] = 1
-                if i /= 3-1 then
+                if i < 3-1 then
                     w_pio_data_in_value(1*32-1 downto 0*32)      <= X"00000100";
                 else
                     w_pio_data_in_value(1*32-1 downto 0*32)      <= X"00010100";
@@ -350,7 +385,7 @@ begin
     end process;
 
     motor_value(2) <= w_pid_output(2)(31) & w_pid_output(2)(15-1 downto 0);
-    motor_value(3) <= (others=>'0');
+    motor_value(3) <= w_pid_output(3)(31) & w_pid_output(3)(15-1 downto 0);
     motor_value(4) <= (others=>'0');
     motor_value(5) <= (others=>'0');
 

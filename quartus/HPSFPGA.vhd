@@ -149,10 +149,10 @@ entity hpsfpga is
     spi0_miso    : in  std_logic;
     spi0_ss      : in  std_logic;
 
-    spi1_sclk    : out std_logic;
-    spi1_mosi    : out std_logic;
+    spi1_sclk    : in  std_logic;
+    spi1_mosi    : in  std_logic;
     spi1_miso    : in  std_logic;
-    spi1_ss      : out std_logic;
+    spi1_ss      : in  std_logic;
 
     --! Use SPI1
     imu_ss       : out std_logic;
@@ -309,26 +309,30 @@ architecture hpsfpga_arch of hpsfpga is
             pio_n_layer3_data_in_read             : out   std_logic_vector(64-1 downto 0);                     -- data_in_read
             pio_n_layer3_data_out_value           : out   std_logic_vector(2048-1 downto 0);                    -- data_out_value
             pio_n_layer3_data_out_write           : out   std_logic_vector(64-1 downto 0);                     -- data_out_write
-			   uart_0_rxd                            : in    std_logic                       := 'X';             -- rxd
-			   uart_0_txd                            : out   std_logic;                                           -- txd
-			   uart_1_rxd                            : in    std_logic                       := 'X';             -- rxd
-			   uart_1_txd                            : out   std_logic;                                           -- txd
-			   uart_2_rxd                            : in    std_logic                       := 'X';             -- rxd
-			   uart_2_txd                            : out   std_logic;                                           -- txd
-			   uart_3_rxd                            : in    std_logic                       := 'X';             -- rxd
-			   uart_3_txd                            : out   std_logic;                                           -- txd
-			   uart_4_rxd                            : in    std_logic                       := 'X';             -- rxd
-			   uart_4_txd                            : out   std_logic;                                           -- txd
-			   uart_5_rxd                            : in    std_logic                       := 'X';             -- rxd
-			   uart_5_txd                            : out   std_logic;                                           -- txd
-			   uart_6_rxd                            : in    std_logic                       := 'X';             -- rxd
-			   uart_6_txd                            : out   std_logic;                                           -- txd
-			   uart_7_rxd                            : in    std_logic                       := 'X';             -- rxd
-			   uart_7_txd                            : out   std_logic                                           -- txd
-			
-        );
+            uart_0_rxd                            : in    std_logic                       := 'X';             -- rxd
+            uart_0_txd                            : out   std_logic;                                           -- txd
+            uart_1_rxd                            : in    std_logic                       := 'X';             -- rxd
+            uart_1_txd                            : out   std_logic;                                           -- txd
+            uart_2_rxd                            : in    std_logic                       := 'X';             -- rxd
+            uart_2_txd                            : out   std_logic;                                           -- txd
+            uart_3_rxd                            : in    std_logic                       := 'X';             -- rxd
+            uart_3_txd                            : out   std_logic;                                           -- txd
+            uart_4_rxd                            : in    std_logic                       := 'X';             -- rxd
+            uart_4_txd                            : out   std_logic;                                           -- txd
+            uart_5_rxd                            : in    std_logic                       := 'X';             -- rxd
+            uart_5_txd                            : out   std_logic;                                           -- txd
+            uart_6_rxd                            : in    std_logic                       := 'X';             -- rxd
+            uart_6_txd                            : out   std_logic;                                           -- txd
+            uart_7_rxd                            : in    std_logic                       := 'X';             -- rxd
+            uart_7_txd                            : out   std_logic;                                           -- txd
+            uart_8_rxd                            : in    std_logic                       := 'X';             -- rxd
+            uart_8_txd                            : out   std_logic;                                           -- txd
+            uart_9_rxd                            : in    std_logic                       := 'X';             -- rxd
+            uart_9_txd                            : out   std_logic;     
+            uart_10_rxd                            : in    std_logic                       := 'X';             -- rxd
+            uart_10_txd                            : out   std_logic
+            );
 	end component hps_fpga;
-
 
 
 ----=======================================================
@@ -358,7 +362,7 @@ architecture hpsfpga_arch of hpsfpga is
     
     
     --------- SW UART ----------
-    constant SW_UART_COUNT : natural := 8;
+    constant SW_UART_COUNT : natural := 11;
     signal w_sw_uart_tx       : std_logic_vector(SW_UART_COUNT-1 downto 0);
     signal w_sw_uart_rx       : std_logic_vector(SW_UART_COUNT-1 downto 0);
 
@@ -366,18 +370,21 @@ architecture hpsfpga_arch of hpsfpga is
     constant SW_UART_ID_LOW_LEVEL   : natural := 1; 
     constant SW_UART_ID_PID_D       : natural := 2; 
     constant SW_UART_ID_PID_A       : natural := 3; 
-    constant SW_UART_ID_PID_CUSTOM  : natural := 4; 
+    constant SW_UART_ID_PID_CUSTOM_1: natural := 4; 
+    constant SW_UART_ID_PID_CUSTOM_2: natural := 10; 
     constant SW_UART_ID_ODOMETRY    : natural := 5; 
     constant SW_UART_ID_LIDAR       : natural := 6; 
     constant SW_UART_ID_TRAJ        : natural := 7; 
+    constant SW_UART_ID_PROXIMITY   : natural := 8; 
+    constant SW_UART_ID_BLUETOOTH   : natural := 9; 
 
     
 
     signal w_motor_value    : int16_t(6-1 downto 0);
     signal w_motor_current  : int24_t(6-1 downto 0);
     signal w_motor_fault    : std_logic_vector(6-1 downto 0);
-    signal w_qei_value      : int16_t(5-1 downto 0);
-    signal w_qei_ref        : std_logic_vector(5-1 downto 0);
+    signal w_qei_value      : int16_t(6-1 downto 0);
+    signal w_qei_ref        : std_logic_vector(6-1 downto 0);
  
     signal w_sum_m_dist    : std_logic_vector(32-1 downto 0);
     signal w_sum_m_angle   : std_logic_vector(32-1 downto 0);
@@ -450,10 +457,14 @@ begin
         
         sw_uart_tx(SW_UART_L1_ID_SCREEN)      => w_sw_uart_tx(SW_UART_ID_SCREEN),
         sw_uart_tx(SW_UART_L1_ID_LOW_LEVEL)   => w_sw_uart_tx(SW_UART_ID_LOW_LEVEL),
-        
+        sw_uart_tx(SW_UART_L1_ID_PROXIMITY)   => w_sw_uart_tx(SW_UART_ID_PROXIMITY),
+        sw_uart_tx(SW_UART_L1_ID_BLUETOOTH)   => w_sw_uart_tx(SW_UART_ID_BLUETOOTH),
+       
+
         sw_uart_rx(SW_UART_L1_ID_SCREEN)      => w_sw_uart_rx(SW_UART_ID_SCREEN),
         sw_uart_rx(SW_UART_L1_ID_LOW_LEVEL)   => w_sw_uart_rx(SW_UART_ID_LOW_LEVEL),
-                
+        sw_uart_rx(SW_UART_L1_ID_PROXIMITY)   => w_sw_uart_rx(SW_UART_ID_PROXIMITY),
+        sw_uart_rx(SW_UART_L1_ID_BLUETOOTH)   => w_sw_uart_rx(SW_UART_ID_BLUETOOTH),               
          
         ---------------------------------
         ---------- TO/FROM IOs ----------
@@ -629,14 +640,16 @@ begin
         
         sw_uart_tx(SW_UART_L2_ID_PID_D)     => w_sw_uart_tx(SW_UART_ID_PID_D),
         sw_uart_tx(SW_UART_L2_ID_PID_A)     => w_sw_uart_tx(SW_UART_ID_PID_A),
-        sw_uart_tx(SW_UART_L2_ID_PID_CUSTOM)=> w_sw_uart_tx(SW_UART_ID_PID_CUSTOM),
+        sw_uart_tx(SW_UART_L2_ID_PID_CUSTOM_1)=> w_sw_uart_tx(SW_UART_ID_PID_CUSTOM_1),
+        sw_uart_tx(SW_UART_L2_ID_PID_CUSTOM_2)=> w_sw_uart_tx(SW_UART_ID_PID_CUSTOM_2),
         sw_uart_tx(SW_UART_L2_ID_ODOMETRY)  => w_sw_uart_tx(SW_UART_ID_ODOMETRY),
         sw_uart_tx(SW_UART_L2_ID_LIDAR)     => w_sw_uart_tx(SW_UART_ID_LIDAR),
 
         
         sw_uart_rx(SW_UART_L2_ID_PID_D)     => w_sw_uart_rx(SW_UART_ID_PID_D),
         sw_uart_rx(SW_UART_L2_ID_PID_A)     => w_sw_uart_rx(SW_UART_ID_PID_A),
-        sw_uart_rx(SW_UART_L2_ID_PID_CUSTOM)=> w_sw_uart_rx(SW_UART_ID_PID_CUSTOM),
+        sw_uart_rx(SW_UART_L2_ID_PID_CUSTOM_1)=> w_sw_uart_rx(SW_UART_ID_PID_CUSTOM_1),
+        sw_uart_rx(SW_UART_L2_ID_PID_CUSTOM_2)=> w_sw_uart_rx(SW_UART_ID_PID_CUSTOM_2),
         sw_uart_rx(SW_UART_L2_ID_ODOMETRY)  => w_sw_uart_rx(SW_UART_ID_ODOMETRY),
         sw_uart_rx(SW_UART_L2_ID_LIDAR)     => w_sw_uart_rx(SW_UART_ID_LIDAR),
         
@@ -845,6 +858,16 @@ begin
 
 		 uart_7_rxd => w_sw_uart_rx(7),
 		 uart_7_txd => w_sw_uart_tx(7),
+
+		 uart_8_rxd => w_sw_uart_rx(8),
+		 uart_8_txd => w_sw_uart_tx(8),
+         
+		 uart_9_rxd => w_sw_uart_rx(9),
+		 uart_9_txd => w_sw_uart_tx(9),
+
+		 uart_10_rxd => w_sw_uart_rx(10),
+		 uart_10_txd => w_sw_uart_tx(10),
+          
 		 
 	    -- HPS DDR3
 	    memory_mem_a                          =>  HPS_DDR3_ADDR ,                       --                memorymem_a

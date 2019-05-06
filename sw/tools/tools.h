@@ -23,7 +23,7 @@ void uart_rs232_configure(uint16_t divisor);
 void uart_rs232_tx(uint8_t data);
 uint8_t uart_rs232_rx(uint8_t *data, uint32_t timeout);
 void uart_rs232_tx_frame(uint8_t *data, uint32_t len);
-uint32_t uart_rs232_rx_frame(uint8_t *data, uint32_t timeout_sof, uint32_t timeout_eof);
+uint32_t uart_rs232_rx_frame(uint8_t *data, uint16_t buffer_size, uint32_t timeout_sof, uint32_t timeout_eof);
 
 typedef struct {
     uint8_t*    buffer;
