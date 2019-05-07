@@ -117,7 +117,7 @@ entity robot_layer_1 is
         uart0_tx     : out std_logic;
 
         uart1_rx     : inout std_logic;
-        uart1_tx     : out std_logic;
+        uart1_tx     : in    std_logic;
 
         uart2_rx     : in  std_logic;
         uart2_tx     : out std_logic;
@@ -250,6 +250,15 @@ architecture rtl of robot_layer_1 is
     signal w_esc_current  : int24_t(ESC_COUNT-1 downto 0);
     signal w_esc_out      : std_logic_vector(ESC_COUNT-1 downto 0);
     signal w_esc_dir      : std_logic_vector(ESC_COUNT-1 downto 0);
+
+    constant REG_PWM_CUSTOM_OFFSET : natural := 48;
+    constant PWM_CUSTOM_COUNT : natural := 4;
+
+    signal w_pwm_custom_value    : int16_t(PWM_CUSTOM_COUNT-1 downto 0);
+    signal w_pwm_custom_out      : std_logic_vector(PWM_CUSTOM_COUNT-1 downto 0);
+    signal w_pwm_custom_dir      : std_logic_vector(PWM_CUSTOM_COUNT-1 downto 0);
+
+
 
     constant REG_QEI_OFFSET : natural := 24;
 
@@ -867,6 +876,39 @@ begin
 
 
 
+    g_pwm_custom: for i in 0 to PWM_CUSTOM_COUNT-1 generate
+        signal w_duty : std_logic_vector(15-1 downto 0);
+        signal w_reg  : std_logic_vector(16-1 downto 0);
+    begin
+        
+        w_reg <= regs_data_out_value(REG_PWM_CUSTOM_OFFSET*32+16*(i+1)-1 downto REG_PWM_CUSTOM_OFFSET*32+16*i);
+
+
+        w_pwm_custom_value(i) <= w_reg;
+
+        w_duty <= std_logic_vector(abs(signed(w_pwm_custom_value(i))))(w_duty'range);
+
+        inst_pwm_custom: pwm 
+        generic map(
+            sys_clk         => CLK_FREQUENCY_HZ, --system clock frequency in Hz
+            pwm_freq        => 25_000,     --PWM switching frequency in Hz
+            bits_resolution => w_duty'length,         --bits of resolution setting the duty cycle
+            phases          => 1           --number of out : pwms and phases
+        )
+        port map (
+            clk       => clk,
+            reset_n   => w_reset_n,                             
+            ena       => '1',                               
+            duty      => w_duty,
+            pwm_out(0)=> w_pwm_custom_out(i)
+        );
+        
+        w_pwm_custom_dir(i) <= w_pwm_custom_value(i)(w_pwm_custom_value(i)'high);
+       
+    end generate;
+
+
+
     lv_mux <= r_lv_mux;
     
     esc0_pwm <= w_esc_out(0);
@@ -1031,23 +1073,28 @@ begin
     
     --------------------------------------------------------
     --! PHYSICAL UART CABLING
-    --! UART0 TX = NEXTION SCREEN    <==> SW_UART  
-    --! UART0 RX = PROXIMITY SENSOR  <==> SW_UART  
-    --! UART1 = SMART SERVO BUS      <==> ORCA LOW LEVEL
-    --! UART2 = RPLIDAR A2           <==> LAYER2 
-    --! UART3 = BLUETOOTH            <==> SW_UART         
+
+    --! I2C0SDA(RX)+I2C0RESET(TX) = NEXTION + <==> SW_UART
+    --! I2C1SCL(RX) = PROX SENSOR 1 ARM LEFT  <==> SW_UART
+    --! I2C1SDA(RX)+I2C1RESET(TX)+I2C1SCL(PWM) = RPLIDARA2_1 + PWM <==> LAYER2
+
+
+    --! UART0 = BLUETOOTH                  <==> SW_UART
+    --! UART1 RX = SMART SERVO BUS         <==> ORCA LOW LEVEL
+    --! UART1 TX (but real RX) = PROX SENSOR 2 ARM RIGHT <==> SW_UART
+    --! UART2 = RPLIDARA2_2+PWM            <==> LAYER2
+    --! UART3 = RPLIDARA2_3+PWM            <==> LAYER2
+
+         
     --------------------------------------------------------
-    
+
+
     --------------------------------------------------------
-    ------------ UART 0 <==> SW_UART_L1_ID_SCREEN -------------
-    uart0_tx                           <= sw_uart_tx(SW_UART_L1_ID_SCREEN);
-    sw_uart_rx(SW_UART_L1_ID_SCREEN)   <= '0';--uart0_rx;
+    ------------ UART 0 <==> SW_UART_L1_ID_BLUETOOTH -------------
+    uart0_tx     <= sw_uart_tx(SW_UART_L1_ID_BLUETOOTH);--uart_tx(3);
+    sw_uart_rx(SW_UART_L1_ID_BLUETOOTH)   <= uart0_rx;
     
-    sw_uart_rx(SW_UART_L1_ID_PROXIMITY)<= uart0_rx;
-    
-   
-    uart_rx(0) <= uart0_rx;
-    --UNUSED: uart_tx(0); 
+
     --------------------------------------------------------
     --------------------------------------------------------
     
@@ -1058,11 +1105,11 @@ begin
 					  		  
 	 w_ll_uart_rxd <= uart1_rx when r_ll_uart_rs485 = '0' or w_ll_uart_transmitting = '0' 
                 else '1';
-                
-	 uart1_tx   <= w_ll_uart_txd;
-	     
-    uart_rx(1) <= uart1_rx;
-    --UNUSED: uart_tx(1); 
+               	    
+
+    --! WARNING: HERE TX is an input
+    sw_uart_rx(SW_UART_L1_ID_PROXIMITY_2)<= uart1_tx;
+
     --------------------------------------------------------        
     --------------------------------------------------------
     
@@ -1071,30 +1118,53 @@ begin
     uart2_tx     <= uart_tx(2);
     uart_rx(2)   <= uart2_rx;
     
-    --! generate PWM for RPLIDAR A2 motocontrol PIN
-    uart2_custom <= w_motor_out(5);    
+    --! PWM for RPLIDAR A2 motocontrol PIN
+    uart2_custom <= w_pwm_custom_out(1);
     --------------------------------------------------------
     --------------------------------------------------------
 
     --------------------------------------------------------
-    ---------------- UART 3 <==> UNUSED --------------------
-    uart3_tx     <= sw_uart_tx(SW_UART_L1_ID_BLUETOOTH);--uart_tx(3);
-    sw_uart_rx(SW_UART_L1_ID_BLUETOOTH)   <= uart3_rx;
-    
+    ---------------- UART 3 <==> LAYER2 --------------------
+    uart3_tx     <= uart_tx(3);
     uart_rx(3)   <= uart3_rx;
     
-    --! drive to GND
-    uart3_custom <= '0';    
+    --! PWM for RPLIDAR A2 motocontrol PIN
+    uart3_custom <= w_pwm_custom_out(2);
+    --------------------------------------------------------
+    --------------------------------------------------------
+    
+    --------------------------------------------------------
+    ----------------- I2C 0 <==> SW_UART -------------------
+    i2c0_reset    <= sw_uart_tx(SW_UART_L1_ID_SCREEN);
+    sw_uart_rx(SW_UART_L1_ID_SCREEN)  <= i2c0_sda;
+    i2c0_sda      <= 'Z';
+
+    i2c0_scl <= 'Z';
+    sw_uart_rx(SW_UART_L1_ID_PROXIMITY_1)<= i2c0_scl;
+
+    --------------------------------------------------------
+    --------------------------------------------------------
+    
+    --------------------------------------------------------
+    ----------------- I2C 1 <==> LAYER2 --------------------
+    i2c1_reset    <= uart_tx(0);
+    uart_rx(0)    <= i2c1_sda;
+    i2c1_sda      <= 'Z';
+    
+    --! PWM for RPLIDAR A2 motocontrol PIN
+    i2c1_scl <= 'Z' when w_pwm_custom_out(0) = '1' else '0';
+
     --------------------------------------------------------
     --------------------------------------------------------
     
 
-    i2c0_scl <= 'Z' when w_i2c_0_scl_oe = '0' else '0';
-    i2c0_sda <= 'Z' when w_i2c_0_sda_oe = '0' else '0';
-    i2c0_reset <= '0';
 
-    i2c1_scl <= 'Z' when w_i2c_1_scl_oe = '0' else '0';
-    i2c1_sda <= 'Z' when w_i2c_1_sda_oe = '0' else '0';
+    --i2c0_scl <= 'Z' when w_i2c_0_scl_oe = '0' else '0';
+    --i2c0_sda <= 'Z' when w_i2c_0_sda_oe = '0' else '0';
+    --i2c0_reset <= '0';
+
+    --i2c1_scl <= 'Z' when w_i2c_1_scl_oe = '0' else '0';
+    --i2c1_sda <= 'Z' when w_i2c_1_sda_oe = '0' else '0';
 
 
 
@@ -1206,7 +1276,7 @@ begin
         w_regs_data_in_value((1+REGS_CMD_OUT_OFFSET)*32-1 downto (0+REGS_CMD_OUT_OFFSET)*32)       <= w_pio_data_out_value((1+ORCA_REGS_CMD_OUT_OFFSET)*32-1   downto (0+ORCA_REGS_CMD_OUT_OFFSET)*32);
 
 		  
-        i2c1_reset <= std_norm_range(w_pio_data_out_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1 downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32))(8);
+        --i2c1_reset <= std_norm_range(w_pio_data_out_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1 downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32))(8);
 
         w_adc_muxed_id      <= std_norm_range(w_pio_data_out_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1   downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32))(32-1 downto 24);
         w_adc_muxed_valid   <= std_norm_range(w_pio_data_out_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1   downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32))(16);

@@ -10,14 +10,15 @@ package robot_layer_2_pkg is
     constant MOTOR_COUNT : natural := 6;
     constant QEI_COUNT   : natural := 4+1+1;
 
-    constant SW_UART_L2_COUNT : natural := 6; 
+    constant SW_UART_L2_COUNT : natural := 8; 
     constant SW_UART_L2_ID_PID_D       : natural := 0; 
     constant SW_UART_L2_ID_PID_A       : natural := 1; 
     constant SW_UART_L2_ID_PID_CUSTOM_1: natural := 2; 
     constant SW_UART_L2_ID_PID_CUSTOM_2: natural := 3; 
     constant SW_UART_L2_ID_ODOMETRY    : natural := 4; 
-    constant SW_UART_L2_ID_LIDAR       : natural := 5; 
-
+    constant SW_UART_L2_ID_LIDAR_1     : natural := 5; 
+    constant SW_UART_L2_ID_LIDAR_2     : natural := 6; 
+    constant SW_UART_L2_ID_LIDAR_3     : natural := 7; 
     
     component robot_layer_2 is
     generic (
