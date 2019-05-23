@@ -17,7 +17,7 @@ typedef struct pid_mapping
     uint8_t enable; // [1]
     uint8_t override;
     uint8_t inverted;
-    uint8_t unused;
+    uint8_t speed_reductor; // in percent, 0 = 0%, 100=100%
     float P; // [2] 
     float I; // [3]
     float D; // [4]
@@ -41,6 +41,7 @@ typedef struct pid_data
     // OUTPUT PROCESSED
     uint8_t enabled;
     uint8_t inverted;
+    uint8_t speed_reductor;
 
     float f_target;
     int32_t target;
@@ -141,8 +142,11 @@ void pid_update_config(pid_data_t* data,volatile pid_mapping_t* regs)
     float speed = regs->speed;
     float acc = regs->acc;
     uint32_t sat = regs->sat;  
+    uint8_t speed_reductor = regs->speed_reductor;
 
     data->inverted = regs->inverted;
+
+    
 
     if (P != data->Kp || I != data->Ki2 || D != data->Kd)
     {
@@ -154,13 +158,25 @@ void pid_update_config(pid_data_t* data,volatile pid_mapping_t* regs)
             pid_start(data,regs);
     }
 
-    if (speed != data->speed || acc != data->acc)
+    if (speed != data->speed || acc != data->acc || speed_reductor != data->speed_reductor)
     {
         data->speed = speed;
         data->acc = acc;
+        data->speed_reductor = speed_reductor;
+
+        if (speed_reductor != 0)
+        {
+            if (speed_reductor > 100)
+                speed_reductor = 100;
+
+            float ratio = (float)(100-speed_reductor)/100.0;
+
+            speed *= ratio;
+        }
 
         quadramp_set_2nd_order_vars(&data->qr,acc,acc);
         quadramp_set_1st_order_vars(&data->qr,speed,speed);
+
 /*
         print_float(data->f_target,0);
         jtaguart_puts("|");

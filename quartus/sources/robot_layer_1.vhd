@@ -116,36 +116,36 @@ entity robot_layer_1 is
         uart0_rx     : in  std_logic;
         uart0_tx     : out std_logic;
 
-        uart1_rx     : inout std_logic;
-        uart1_tx     : in    std_logic;
+        uart1_rx     : in  std_logic;
+        uart1_tx     : in  std_logic;
 
         uart2_rx     : in  std_logic;
         uart2_tx     : out std_logic;
         uart2_custom : out std_logic;
 
-        uart3_rx     : in  std_logic;
-        uart3_tx     : out std_logic;
+        uart3_rx     : inout std_logic;
+        uart3_tx     : in    std_logic;
         uart3_custom : out std_logic;
 
         --------- I2C ----------
-        i2c0_scl     : inout std_logic;
-        i2c0_sda     : inout std_logic;
-        i2c0_reset   : out   std_logic;
+        i2c0_scl     : in std_logic;
+        i2c0_sda     : in std_logic;
+        i2c0_reset   : in std_logic;
 
-        i2c1_scl     : inout std_logic;
-        i2c1_sda     : inout std_logic;
-        i2c1_reset   : out   std_logic;
+        i2c1_scl     : in std_logic;
+        i2c1_sda     : in std_logic;
+        i2c1_reset   : in std_logic;
 
         --------- SPI ----------
-        spi0_sclk    : in  std_logic;
+        spi0_sclk    : out std_logic;
         spi0_mosi    : in  std_logic;
         spi0_miso    : in  std_logic;
-        spi0_ss      : in  std_logic;
+        spi0_ss      : out std_logic;
 
-        spi1_sclk    : in  std_logic;
+        spi1_sclk    : out std_logic;
         spi1_mosi    : in  std_logic;
         spi1_miso    : in  std_logic;
-        spi1_ss      : in  std_logic;
+        spi1_ss      : out std_logic;
 
         --! Use SPI1
         imu_ss       : out std_logic;
@@ -935,13 +935,13 @@ begin
     w_qei_b(3) <= qei3_b;
     w_qei_z(3) <= qei3_z;
 
-    w_qei_a(4) <= spi0_sclk;
-    w_qei_b(4) <= spi0_ss;
-    w_qei_z(4) <= not spi0_mosi;
+    w_qei_a(4) <= i2c0_sda;--spi0_sclk;
+    w_qei_b(4) <= i2c0_reset;--spi0_ss;
+    w_qei_z(4) <= i2c0_scl;--not spi0_mosi;
 
-    w_qei_a(5) <= spi1_sclk;
-    w_qei_b(5) <= spi1_ss;
-    w_qei_z(5) <= not spi1_mosi;
+    w_qei_a(5) <= i2c1_sda;--spi1_sclk;
+    w_qei_b(5) <= i2c1_reset;--spi1_ss;
+    w_qei_z(5) <= i2c1_scl;--not spi1_mosi;
 
     qei_value <= w_qei_value;
     qei_ref   <= w_qei_ref;
@@ -1090,9 +1090,9 @@ begin
 
 
     --------------------------------------------------------
-    ------------ UART 0 <==> SW_UART_L1_ID_BLUETOOTH -------------
-    uart0_tx     <= sw_uart_tx(SW_UART_L1_ID_BLUETOOTH);--uart_tx(3);
-    sw_uart_rx(SW_UART_L1_ID_BLUETOOTH)   <= uart0_rx;
+    ------------ UART 0 <==> SW_UART_L1_ID_SCREEN -------------
+    uart0_tx     <= sw_uart_tx(SW_UART_L1_ID_SCREEN);--uart_tx(3);
+    sw_uart_rx(SW_UART_L1_ID_SCREEN)   <= uart0_rx;
     
 
     --------------------------------------------------------
@@ -1100,15 +1100,20 @@ begin
     
     --------------------------------------------------------
     ------------ UART 1 <==> ORCA LOW LEVEL -------------
-	 uart1_rx <= w_ll_uart_txd when r_ll_uart_rs485 = '1' and w_ll_uart_transmitting = '1'
-            else 'Z';
+	 --uart1_rx <= w_ll_uart_txd when r_ll_uart_rs485 = '1' and w_ll_uart_transmitting = '1'
+     --       else 'Z';
 					  		  
-	 w_ll_uart_rxd <= uart1_rx when r_ll_uart_rs485 = '0' or w_ll_uart_transmitting = '0' 
-                else '1';
+	 --w_ll_uart_rxd <= uart1_rx when r_ll_uart_rs485 = '0' or w_ll_uart_transmitting = '0' 
+     --           else '1';
                	    
 
+    sw_uart_rx(SW_UART_L1_ID_PROXIMITY_2) <= uart1_tx;
+    sw_uart_rx(SW_UART_L1_ID_BLUETOOTH) <= uart1_rx;
+ 
+
+
     --! WARNING: HERE TX is an input
-    sw_uart_rx(SW_UART_L1_ID_PROXIMITY_2)<= uart1_tx;
+    --sw_uart_rx(SW_UART_L1_ID_PROXIMITY_2)<= uart1_tx;
 
     --------------------------------------------------------        
     --------------------------------------------------------
@@ -1118,41 +1123,44 @@ begin
     uart2_tx     <= uart_tx(2);
     uart_rx(2)   <= uart2_rx;
     
-    --! PWM for RPLIDAR A2 motocontrol PIN
-    uart2_custom <= w_pwm_custom_out(1);
+    --! PWM for RPLIDAR A2 motocontrol PIN (TOP LIDAR)
+    uart2_custom <= w_pwm_custom_out(2);
     --------------------------------------------------------
     --------------------------------------------------------
 
     --------------------------------------------------------
     ---------------- UART 3 <==> LAYER2 --------------------
-    uart3_tx     <= uart_tx(3);
-    uart_rx(3)   <= uart3_rx;
-    
-    --! PWM for RPLIDAR A2 motocontrol PIN
-    uart3_custom <= w_pwm_custom_out(2);
-    --------------------------------------------------------
-    --------------------------------------------------------
-    
-    --------------------------------------------------------
-    ----------------- I2C 0 <==> SW_UART -------------------
-    i2c0_reset    <= sw_uart_tx(SW_UART_L1_ID_SCREEN);
-    sw_uart_rx(SW_UART_L1_ID_SCREEN)  <= i2c0_sda;
-    i2c0_sda      <= 'Z';
 
-    i2c0_scl <= 'Z';
-    sw_uart_rx(SW_UART_L1_ID_PROXIMITY_1)<= i2c0_scl;
+	uart3_rx <= w_ll_uart_txd when r_ll_uart_rs485 = '1' and w_ll_uart_transmitting = '1'
+           else 'Z';
+					  		  
+	w_ll_uart_rxd <= uart3_rx when r_ll_uart_rs485 = '0' or w_ll_uart_transmitting = '0' 
+           else '1';
+               	    
+
+    sw_uart_rx(SW_UART_L1_ID_PROXIMITY_1)<= uart3_tx;
+
+
+    uart3_custom <= sw_uart_tx(SW_UART_L1_ID_BLUETOOTH);
+    --------------------------------------------------------
+    --------------------------------------------------------
+    
+    --------------------------------------------------------
+    ------------ SPI 0 <==> LAYER2 (UART0) -----------------
+
+    spi0_ss      <= uart_tx(0);
+    uart_rx(0)   <= spi0_mosi;
+    spi0_sclk     <= w_pwm_custom_out(0);
 
     --------------------------------------------------------
     --------------------------------------------------------
     
     --------------------------------------------------------
-    ----------------- I2C 1 <==> LAYER2 --------------------
-    i2c1_reset    <= uart_tx(0);
-    uart_rx(0)    <= i2c1_sda;
-    i2c1_sda      <= 'Z';
-    
-    --! PWM for RPLIDAR A2 motocontrol PIN
-    i2c1_scl <= 'Z' when w_pwm_custom_out(0) = '1' else '0';
+    -------------- SPI 1 <==> LAYER2 (UART1) ---------------
+
+    spi1_ss      <= uart_tx(1);
+    uart_rx(1)   <= spi1_mosi;
+    spi1_sclk     <= w_pwm_custom_out(1);
 
     --------------------------------------------------------
     --------------------------------------------------------

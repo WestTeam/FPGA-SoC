@@ -441,8 +441,8 @@ begin
             pio_data_in_read        => open,
             pio_data_out_value      => open,
             pio_data_out_write      => open,
-            uart_0_rxd              => uart_rx(2),
-            uart_0_txd              => uart_tx(2),
+            uart_0_rxd              => uart_rx(1),
+            uart_0_txd              => uart_tx(1),
             uart_1_rxd              => sw_uart_tx(SW_UART_L2_ID_LIDAR_2),
             uart_1_txd              => sw_uart_rx(SW_UART_L2_ID_LIDAR_2)
         );
@@ -459,8 +459,8 @@ begin
             pio_data_in_read        => open,
             pio_data_out_value      => open,
             pio_data_out_write      => open,
-            uart_0_rxd              => uart_rx(3),
-            uart_0_txd              => uart_tx(3),
+            uart_0_rxd              => uart_rx(2),
+            uart_0_txd              => uart_tx(2),
             uart_1_rxd              => sw_uart_tx(SW_UART_L2_ID_LIDAR_3),
             uart_1_txd              => sw_uart_rx(SW_UART_L2_ID_LIDAR_3)
         );

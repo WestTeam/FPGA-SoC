@@ -121,36 +121,36 @@ package robot_layer_1_pkg is
         uart0_rx     : in  std_logic;
         uart0_tx     : out std_logic;
 
-        uart1_rx     : inout std_logic;
+        uart1_rx     : in  std_logic;
         uart1_tx     : in  std_logic;
 
         uart2_rx     : in  std_logic;
         uart2_tx     : out std_logic;
         uart2_custom : out std_logic;
 
-        uart3_rx     : in  std_logic;
-        uart3_tx     : out std_logic;
+        uart3_rx     : inout std_logic;
+        uart3_tx     : in    std_logic;
         uart3_custom : out std_logic;
 
         --------- I2C ----------
-        i2c0_scl     : inout std_logic;
-        i2c0_sda     : inout std_logic;
-        i2c0_reset   : out   std_logic;
+        i2c0_scl     : in std_logic;
+        i2c0_sda     : in std_logic;
+        i2c0_reset   : in std_logic;
 
-        i2c1_scl     : inout std_logic;
-        i2c1_sda     : inout std_logic;
-        i2c1_reset   : out   std_logic;
+        i2c1_scl     : in std_logic;
+        i2c1_sda     : in std_logic;
+        i2c1_reset   : in std_logic;
 
         --------- SPI ----------
-        spi0_sclk    : in  std_logic;
+        spi0_sclk    : out std_logic;
         spi0_mosi    : in  std_logic;
         spi0_miso    : in  std_logic;
-        spi0_ss      : in  std_logic;
+        spi0_ss      : out std_logic;
 
-        spi1_sclk    : in  std_logic;
+        spi1_sclk    : out std_logic;
         spi1_mosi    : in  std_logic;
         spi1_miso    : in  std_logic;
-        spi1_ss      : in  std_logic;
+        spi1_ss      : out std_logic;
 
         --! Use SPI1
         imu_ss       : out std_logic;
