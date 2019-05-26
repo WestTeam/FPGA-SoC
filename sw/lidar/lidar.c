@@ -103,6 +103,18 @@ typedef struct
     rplidar_data_response rx_data;
     uint8_t               rx_data_index;
 
+
+    uint32_t              rx_timeout_count;
+    uint32_t              tx_timeout_count;
+
+    uint32_t              rx_byte_count;
+    uint32_t              tx_byte_count;
+
+    uint32_t              rx_packet_count;
+    uint32_t              tx_packet_count;
+
+    uint32_t              tx_reset_count;
+
     state_t state;
 
     uint8_t pos_valid;
@@ -166,6 +178,7 @@ void sw_to_lidar_process(local_data_t *data)
             {
                 if (rx_data == 0xA5)
                 {
+                    //jtaguart_puts("F\n");
                     data->tx_protocol_state = TX_PROTO_WAIT_COMMAND_TYPE;
                     ts_start(&data->tx_protocol_ts);
                 }
@@ -174,12 +187,15 @@ void sw_to_lidar_process(local_data_t *data)
         case TX_PROTO_WAIT_COMMAND_TYPE:
             if (error == 0)
             {
+                data->tx_packet_count++;
+
                 //data->tx_protocol_state = TX_PROTO_END_CMD;
 
                 if (((rx_data >> 7) & 0x01) == 1)
                 {
                     data->tx_protocol_state = TX_PROTO_END_CMD;
                     ts_start(&data->tx_protocol_ts);
+                    //jtaguart_puts("TX_PROTO_END_CMD\n");
                 }
                 else
                     data->tx_protocol_state = TX_PROTO_IDLE;
@@ -191,25 +207,27 @@ void sw_to_lidar_process(local_data_t *data)
 
                     case RPLIDAR_CMD_GET_DEVICE_INFO:
                         data->state = STATE_IDLE;
-                        //jtaguart_puts("GET_DEVICE_INFO\n");
+                        //jtaguart_puts("DEVICE_INFO\n");
                         break;
                     case RPLIDAR_CMD_GET_DEVICE_HEALT_STATUS:
                         data->state = STATE_IDLE;
-                        //jtaguart_puts("GET_DEVICE_HEALT_STATUS\n");
+                        //jtaguart_puts("DEVICE_HEALT_STATUS\n");
                         break;
                     case RPLIDAR_CMD_GET_SAMPLE_RATE:
                         data->state = STATE_IDLE;
-                        //jtaguart_puts("GET_SAMPLE_RATE\n");
+                        //jtaguart_puts("SAMPLE_RATE\n");
                         break;
                     case RPLIDAR_CMD_GET_LIDAR_CONF:
                         data->state = STATE_IDLE;
-                        //jtaguart_puts("GET_LIDAR_CONF\n");
+                        //jtaguart_puts("LIDAR_CONF\n");
                         break;
                     case RPLIDAR_CMD_STOP:
                         data->state = STATE_IDLE;
                         //jtaguart_puts("STOP\n");
                         break;
                     case RPLIDAR_CMD_RESET:
+                        data->tx_reset_count++;
+                        data->rx_protocol_state = RX_PROTO_IDLE;
                         data->state = STATE_IDLE;
                         //jtaguart_puts("RESET\n");
                         break;
@@ -234,6 +252,9 @@ void sw_to_lidar_process(local_data_t *data)
                         //jtaguart_puts("SCAN_EXPRESS\n");
                         break;
                     case RPLIDAR_CMD_GET_ACC_BOARD_FLAG:
+
+                        data->rx_protocol_state = RX_PROTO_IDLE;
+                        data->state = STATE_IDLE;
                         //jtaguart_puts("GET_A_B_F\n");
                         break;            
                     case RPLIDAR_CMD_SET_MOTOR_PWM:
@@ -256,6 +277,7 @@ void sw_to_lidar_process(local_data_t *data)
                 if (ts_is_elapsed(data->tx_protocol_ts,MS_TO_CYCLES(1)))
                 {
                     data->tx_protocol_state = TX_PROTO_IDLE;
+                    data->tx_timeout_count++;
                 }
             }
             break;
@@ -267,6 +289,7 @@ void sw_to_lidar_process(local_data_t *data)
                 if (ts_is_elapsed(data->tx_protocol_ts,MS_TO_CYCLES(1)))
                 {
                     data->tx_protocol_state = TX_PROTO_IDLE;
+                    data->tx_timeout_count++;
                 }
             }
             break;
@@ -276,6 +299,8 @@ void sw_to_lidar_process(local_data_t *data)
     // anyway, if we had data received from SW, we need to send it (identical or modified by the state machine)
     if (error == 0)
     {
+        data->tx_byte_count++;
+        
         uart_rs232_select(UART_LIDAR_SIDE);
         uart_rs232_tx(rx_data);
         //print_int(rx_data,1);
@@ -339,6 +364,7 @@ void lidar_to_sw_process(local_data_t *data)
                 if (ts_is_elapsed(data->rx_protocol_ts,MS_TO_CYCLES(1)))
                 {
                     data->rx_protocol_state = RX_PROTO_IDLE;
+                    data->rx_timeout_count++;
                 }
             }
 
@@ -352,6 +378,8 @@ void lidar_to_sw_process(local_data_t *data)
                 ((uint8_t*)&data->rx_hdr)[data->rx_hdr_index++] = rx_data;
                 if (data->rx_hdr_index == sizeof(data->rx_hdr))
                 {
+                    data->rx_packet_count++;
+
                     // we check if we got the good type of message
                     if (data->rx_hdr.data_type == 0x81 && data->rx_hdr.data_length == 5 && data->rx_hdr.send_mode == 0x01)
                     {
@@ -409,6 +437,8 @@ void lidar_to_sw_process(local_data_t *data)
     // anyway, if we had data received from SW, we need to send it (identical or modified by the state machine)
     if (error == 0 && drop == 0)
     {
+        data->rx_byte_count++;
+
         uart_rs232_select(UART_SW_SIDE);
         uart_rs232_tx(rx_data);
         //print_int(rx_data,1);
@@ -460,134 +490,23 @@ int main()
         lidar_to_sw_process(&data);
 
 
-
-/*
-        uart_rs232_select(0);
-        error = uart_rs232_rx(&rx_data,0);
-        if (error == 0)
-        {
-            uart_rs232_select(1);
-            uart_rs232_tx(rx_data);
-        }
-
-            
-        if (error == 0)
-        {
-
-            //jtaguart_puts("data received\n");
-            switch (state)
-            {
-
-                case 0: // start flag 1
-                    if (rx_data == 0xA5)
-                    {
-                        state++;
-                        //print_int(state,1);
-                    }
-                    break;
-                case 1: // start flag 2
-                    if (rx_data == 0x5A)
-                    {
-                        state++;
-                        //print_int(state,1);
-                    }
-                    else
-                        state = 0;
-                    break;
-                case 2: // payload size
-                    data_size = rx_data;
-                    state++;
-                    break;
-                case 3: // payload size
-                    state++;
-                    break;
-                case 4: // payload size
-                    state++;
-                    break;
-                case 5: // payload size
-                    state++;
-                    break;
-                case 6: // data type
-                    data_type = rx_data;
-                    //print_int(state,1);
-
-                    if (rx_data == 0x81)
-                    {
-                        //jtaguart_puts("data reponse packet descriptor found\n");
-                        state++;
-                    } else {
-                        //jtaguart_puts("unknown descriptor found\n");
-                        //print_int(data,1);
-                        //print_int(data_size,1);
-                        if (rx_data != 0x04 && rx_data != 0x06 && rx_data != 0x15 && rx_data != 0x20 && rx_data != 0x21)
-                        {
-                            //jtaguart_puts("unknown descriptor found\n");
-                            //print_int(data,1);
-                            //print_int(data_size,1);
-                        }
-                        state = 0;
-                    }        
-                    break;
-
-                case 7: // data response packet
-                    ((uint8_t*)&data_response)[0] = rx_data;
-                    state++;
-                    break;
-                case 8: // data response packet
-                    ((uint8_t*)&data_response)[1] = rx_data;
-                    state++;
-                    break;
-                case 9: // data response packet
-                    ((uint8_t*)&data_response)[2] = rx_data;
-                    state++;
-                    break;
-                case 10: // data response packet
-                    ((uint8_t*)&data_response)[3] = rx_data;
-                    state++;
-                    break;
-                case 11: // data response packet
-                    ((uint8_t*)&data_response)[4] = rx_data;
-                    if (data_response.start_flag != data_response.n_start_flag && data_response.check_bit == 1)
-                    {
-                        count++;
-                        state = 7;
-                        if (print == 1)
-                        {
-                            print = 0;
-                            print_int(count,1);
-                            print_int(data.state,1);
-                            print_int(data_response.start_flag,1);
-                            print_int(data_response.n_start_flag,1);
-                            print_int(data_response.quality,1);
-                            print_int(data_response.angle_q6,1);
-                            print_float(((float)data_response.angle_q6)/64.0,1);
-                            print_int(data_response.distance_q2,1);
-                            print_float(((float)data_response.distance_q2)/4.0,1);
-                            jtaguart_puts("\n");
-
-                        }
-                        //jtaguart_puts("data ok\n");
-                    }
-                    else
-                    {
-                        state = 0;
-                        jtaguart_puts("data ko\n");
-                    }
-                    break;
-
-            }
-        }
-
-
-*/
         char chr;
         chr = jtaguart_getchar();
         if (chr != 0)
         {
-            //print = 1;
+            jtaguart_puts("State:");
             print_int(data.state,1);
+            jtaguart_puts("RX:\n");
             print_int(data.rx_protocol_state,1);
+            print_int(data.rx_byte_count,1);
+            print_int(data.rx_packet_count,1);
+            print_int(data.rx_timeout_count,1);
+            jtaguart_puts("TX:\n");
             print_int(data.tx_protocol_state,1);
+            print_int(data.tx_byte_count,1);
+            print_int(data.tx_packet_count,1);
+            print_int(data.tx_timeout_count,1);
+            print_int(data.tx_reset_count,1);
         }
         
         

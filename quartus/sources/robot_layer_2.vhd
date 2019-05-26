@@ -106,7 +106,7 @@ architecture rtl of robot_layer_2 is
             return 11;
 
         else
-            return 11+2;
+            return 11+1;
         end if;
     end function;
 

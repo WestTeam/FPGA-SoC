@@ -107,7 +107,7 @@ entity hpsfpga is
     esc1_dir : out std_logic;
 
     ------- PWM (Servos) ------
-    s : out std_logic_vector(8-1 downto 0);    
+    s : inout std_logic_vector(8-1 downto 0);    
 
     --------- IOs ----------
     io_0 : inout  std_logic;
