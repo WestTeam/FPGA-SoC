@@ -183,7 +183,7 @@ void odo_update_pos_output(odo_data_t* data,volatile odo_mapping_t* regs)
 {
     // we update the "output" copy we keep internally
     data->teta_rad = rad_mod_pi(data->cs.angle_sum + data->e_teta_rad);
-    data->teta_deg = (int16_t)(round(DEG(data->e_teta_rad)*100.0));
+    data->teta_deg = (int16_t)(round(DEG(data->teta_rad)*100.0));
     data->x = data->c_x + (double)data->e_x;
     data->y = data->c_y + (double)data->e_y;
 
@@ -507,7 +507,7 @@ int main()
                     print_float(odo.x,1);
                     print_float(odo.y,1);
                     print_float(odo.teta_rad,1);
-                    print_float((float)odo.teta_deg/100.0,1);
+                    print_float(((float)odo.teta_deg)/100.0,1);
                     jtaguart_puts("Period:\n");
                     print_int((int32_t)period_latest,1);
                     jtaguart_puts("ID Pos:\n");
