@@ -333,7 +333,7 @@ int main()
 
     ts_start(&ts[TS_UPDATE]);
 
-    uart_rs232_configure(50000000/1000000);
+    uart_rs232_configure(50000000/2000000);
 
     uart_rs232_buffer_init(&tx_state,(uint8_t*)&tx_buffer,sizeof(tx_buffer));
 
@@ -431,6 +431,7 @@ int main()
                     odo.cs.qei_sum_latest[0] = odo.cs.qei_sum[0];
                     odo.cs.qei_sum_latest[1] = odo.cs.qei_sum[1];
 
+/*
                     tx_buffer.timestamp = ts[TS_UPDATE];
                     tx_buffer.c_qei_sum[0] = odo.cs.qei_sum[0];
                     tx_buffer.c_qei_sum[1] = odo.cs.qei_sum[1];
@@ -443,7 +444,7 @@ int main()
                     tx_buffer.hdr.crc = protocolCrc((uint8_t*)&tx_buffer,sizeof(odo_debug));
                     
                     uart_rs232_buffer_tx(&tx_state,sizeof(odo_debug));
-
+*/
                     odometry_update_config(&odo,regs);
 
                     ts_stop(&ts[TS_DURATION]);
@@ -454,6 +455,23 @@ int main()
                     ts_start(&ts[TS_UPDATE]);
                 }
                 
+                uint32_t ts;
+
+                ts_start(&ts);
+
+                tx_buffer.timestamp = ts;
+                tx_buffer.c_qei_sum[0] = odo.cs.qei_sum[0];
+                tx_buffer.c_qei_sum[1] = odo.cs.qei_sum[1];
+                tx_buffer.m_qei_sum[0] = odo.ms.qei_sum[0];
+                tx_buffer.m_qei_sum[1] = odo.ms.qei_sum[1];
+                tx_buffer.x = odo.c_x;
+                tx_buffer.y = odo.c_y;
+                tx_buffer.teta_rad = odo.cs.angle_sum;
+
+                tx_buffer.hdr.crc = protocolCrc((uint8_t*)&tx_buffer,sizeof(odo_debug));
+                
+                uart_rs232_buffer_tx(&tx_state,sizeof(odo_debug));
+            
                 // check config changes (if any)
             }
             

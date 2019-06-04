@@ -298,7 +298,7 @@ int main()
 
     ts_start(&ts[TS_UPDATE]);
 
-    uart_rs232_configure(50000000/1000000);
+    uart_rs232_configure(50000000/2000000);
 
     uart_rs232_buffer_init(&tx_state,(uint8_t*)&tx_buffer,sizeof(tx_buffer));
 
