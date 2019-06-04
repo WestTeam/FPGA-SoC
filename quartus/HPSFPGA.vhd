@@ -336,7 +336,11 @@ architecture hpsfpga_arch of hpsfpga is
             uart_12_rxd                           : in    std_logic                       := 'X';             -- rxd
             uart_12_txd                           : out   std_logic;
             uart_13_rxd                           : in    std_logic                       := 'X';             -- rxd
-            uart_13_txd                           : out   std_logic
+            uart_13_txd                           : out   std_logic;
+            			pio_n_layer_test_data_in_value          : in    std_logic_vector(8191 downto 0) := (others => 'X'); -- data_in_value
+			pio_n_layer_test_data_in_read           : out   std_logic_vector(255 downto 0);                     -- data_in_read
+			pio_n_layer_test_data_out_value         : out   std_logic_vector(8191 downto 0);                    -- data_out_value
+			pio_n_layer_test_data_out_write         : out   std_logic_vector(255 downto 0)   
             );
 	end component hps_fpga;
 
@@ -363,6 +367,12 @@ architecture hpsfpga_arch of hpsfpga is
     signal w_pio_n_layer3_data_out_write           : std_logic_vector(64-1 downto 0);                      -- data_out_write
 
 
+    signal pio_n_layer_test_data_in_value          :  std_logic_vector(8191 downto 0) ; -- data_in_value
+    signal pio_n_layer_test_data_in_read           :  std_logic_vector(255 downto 0);                     -- data_in_read
+    signal pio_n_layer_test_data_out_value         :   std_logic_vector(8191 downto 0);                    -- data_out_value
+    signal pio_n_layer_test_data_out_write         :   std_logic_vector(255 downto 0) ;   
+    
+    
     signal w_uart_tx : std_logic_vector(4-1 downto 0);
     signal w_uart_rx : std_logic_vector(4-1 downto 0);
     
@@ -889,6 +899,11 @@ begin
 		 
 		 uart_13_rxd => w_sw_uart_rx(13),
 		 uart_13_txd => w_sw_uart_tx(13),    
+         
+         			pio_n_layer_test_data_in_value  => pio_n_layer_test_data_in_value,          --  pio_n_layer_test.data_in_value
+			pio_n_layer_test_data_in_read           => open,           --                  .data_in_read
+			pio_n_layer_test_data_out_value         => pio_n_layer_test_data_in_value,         --                  .data_out_value
+			pio_n_layer_test_data_out_write         => open ,
 
 	    -- HPS DDR3
 	    memory_mem_a                          =>  HPS_DDR3_ADDR ,                       --                memorymem_a

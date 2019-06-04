@@ -252,6 +252,27 @@
          type = "String";
       }
    }
+   element pio_n_layer_test
+   {
+      datum _sortIndex
+      {
+         value = "27";
+         type = "int";
+      }
+   }
+   element pio_n_layer_test.avl_mm
+   {
+      datum _lockedAddress
+      {
+         value = "1";
+         type = "boolean";
+      }
+      datum baseAddress
+      {
+         value = "4096";
+         type = "String";
+      }
+   }
    element sysid_qsys
    {
       datum _sortIndex
@@ -655,6 +676,11 @@
  <interface
    name="pio_n_layer3"
    internal="pio_n_layer3.data"
+   type="conduit"
+   dir="end" />
+ <interface
+   name="pio_n_layer_test"
+   internal="pio_n_layer_test.data"
    type="conduit"
    dir="end" />
  <interface name="reset" internal="clk_50.clk_in_reset" type="reset" dir="end" />
@@ -1397,6 +1423,10 @@
   <parameter name="ByteEnable" value="false" />
   <parameter name="RegCnt" value="64" />
  </module>
+ <module name="pio_n_layer_test" kind="pio_n" version="1.0" enabled="1">
+  <parameter name="ByteEnable" value="true" />
+  <parameter name="RegCnt" value="256" />
+ </module>
  <module
    name="sysid_qsys"
    kind="altera_avalon_sysid_qsys"
@@ -1976,6 +2006,15 @@
    kind="avalon"
    version="16.1"
    start="hps_arm.h2f_lw_axi_master"
+   end="pio_n_layer_test.avl_mm">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x1000" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="16.1"
+   start="hps_arm.h2f_lw_axi_master"
    end="sysid_qsys.control_slave">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x00010000" />
@@ -2224,6 +2263,11 @@
    kind="clock"
    version="16.1"
    start="clk_50.clk"
+   end="pio_n_layer_test.clk" />
+ <connection
+   kind="clock"
+   version="16.1"
+   start="clk_50.clk"
    end="onchip_memory2_0.clk1" />
  <connection
    kind="clock"
@@ -2448,6 +2492,11 @@
    version="16.1"
    start="clk_50.clk_reset"
    end="uart_13.reset" />
+ <connection
+   kind="reset"
+   version="16.1"
+   start="clk_50.clk_reset"
+   end="pio_n_layer_test.reset" />
  <connection
    kind="reset"
    version="16.1"

@@ -221,14 +221,6 @@
    {
       datum _originalDeviceFamily
       {
-         value = "Cyclone V";
-         type = "String";
-      }
-   }
-   element system
-   {
-      datum _originalDeviceFamily
-      {
          value = "Cyclone IV E";
          type = "String";
       }
@@ -278,6 +270,14 @@
       datum _originalDeviceFamily
       {
          value = "Cyclone IV E";
+         type = "String";
+      }
+   }
+   element system
+   {
+      datum _originalDeviceFamily
+      {
+         value = "Cyclone V";
          type = "String";
       }
    }
@@ -612,7 +612,7 @@ proc compose {} {
  </module>
  <module name="pio_n_0" kind="pio_n" version="1.0" enabled="1">
   <parameter name="ByteEnable" value="false" />
-  <parameter name="RegCnt" value="16" />
+  <parameter name="RegCnt" value="64" />
  </module>
  <module name="uart_0" kind="fifoed_avalon_uart" version="13.2" enabled="1">
   <parameter name="add_error_bits" value="false" />

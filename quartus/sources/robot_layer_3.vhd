@@ -96,11 +96,10 @@ begin
 
 
     b_trajectory: block
-        signal w_pio_data_in_value   :  std_logic_vector(511 downto 0) := (others=>'0');
-        signal w_pio_data_in_read    :  std_logic_vector(15 downto 0);
-        signal w_pio_data_out_value  :  std_logic_vector(511 downto 0);
-        signal w_pio_data_out_write  :  std_logic_vector(15 downto 0);
-
+        signal w_pio_data_in_value   :  std_logic_vector(2048-1 downto 0) := (others=>'0');
+        signal w_pio_data_in_read    :  std_logic_vector(64-1 downto 0);
+        signal w_pio_data_out_value  :  std_logic_vector(2048-1 downto 0);
+        signal w_pio_data_out_write  :  std_logic_vector(64-1 downto 0);
         --! difference between external MM and CPU regs
         constant REGS_ORIGIN : natural := 2;
 

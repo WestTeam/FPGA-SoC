@@ -141,10 +141,10 @@ begin
 
 
     b_odometry: block
-        signal w_pio_data_in_value   :  std_logic_vector(511 downto 0) := (others=>'0');
-        signal w_pio_data_in_read    :  std_logic_vector(15 downto 0);
-        signal w_pio_data_out_value  :  std_logic_vector(511 downto 0);
-        signal w_pio_data_out_write  :  std_logic_vector(15 downto 0);
+        signal w_pio_data_in_value   :  std_logic_vector(2048-1 downto 0) := (others=>'0');
+        signal w_pio_data_in_read    :  std_logic_vector(64-1 downto 0);
+        signal w_pio_data_out_value  :  std_logic_vector(2048-1 downto 0);
+        signal w_pio_data_out_write  :  std_logic_vector(64-1 downto 0);
 
         constant REGS_ODO_OUT_OFFSET : natural := 8;
     begin
@@ -300,10 +300,10 @@ begin
             constant REG_INDEX : natural := get_pid_reg_index(i);--15+REG_COUNT*i;
             constant REG_MEASURE_INDEX : natural := 9;
             constant REG_OUTPUT_INDEX : natural := 11;
-            signal w_pio_data_in_value   :  std_logic_vector(511 downto 0) := (others=>'0');
-            signal w_pio_data_in_read    :  std_logic_vector(15 downto 0);
-            signal w_pio_data_out_value  :  std_logic_vector(511 downto 0);
-            signal w_pio_data_out_write  :  std_logic_vector(15 downto 0);
+        signal w_pio_data_in_value   :  std_logic_vector(2048-1 downto 0) := (others=>'0');
+        signal w_pio_data_in_read    :  std_logic_vector(64-1 downto 0);
+        signal w_pio_data_out_value  :  std_logic_vector(2048-1 downto 0);
+        signal w_pio_data_out_write  :  std_logic_vector(64-1 downto 0);
 
             signal w_pid_override : std_logic;
         begin
@@ -395,7 +395,7 @@ begin
     --sw_uart_rx(SW_UART_L2_ID_LIDAR) <= uart_rx(2);
 
     b_lidar: block
-        signal w_pio_data_in_value   :  std_logic_vector(511 downto 0) := (others=>'0');
+        signal w_pio_data_in_value   :  std_logic_vector(2048-1 downto 0) := (others=>'0');
     begin
 
 --    uint8_t pos_valid; // IN  DATA

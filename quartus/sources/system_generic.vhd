@@ -14,10 +14,10 @@ entity system_generic is
     port (
         clk                     : in  std_logic                      := 'X';             -- clk
         reset_n                 : in  std_logic                      := 'X';              -- reset_n
-        pio_data_in_value       : in  std_logic_vector(511 downto 0) := (others => 'X'); -- data_in_value
-        pio_data_in_read        : out std_logic_vector(15 downto 0);                     -- data_in_read
-        pio_data_out_value      : out std_logic_vector(511 downto 0);                    -- data_out_value
-        pio_data_out_write      : out std_logic_vector(15 downto 0);                     -- data_out_write
+        pio_data_in_value       : in  std_logic_vector(2048-1 downto 0) := (others => 'X'); -- data_in_value
+        pio_data_in_read        : out std_logic_vector(64-1 downto 0);                     -- data_in_read
+        pio_data_out_value      : out std_logic_vector(2048-1 downto 0);                    -- data_out_value
+        pio_data_out_write      : out std_logic_vector(64-1 downto 0);                     -- data_out_write
 		uart_0_rxd              : in  std_logic                      := '1';             -- rxd
 		uart_0_txd              : out std_logic;                                         -- txd
 		uart_1_rxd              : in  std_logic                      := '1';             -- rxd
@@ -54,10 +54,10 @@ architecture rtl of system_generic is
 			memory_instruction_lock          : out std_logic;                                         -- lock
 			memory_instruction_debugaccess   : out std_logic;                                         -- debugaccess
 			memory_instruction_clken         : out std_logic;                                         -- clken
-			pio_data_in_value                : in  std_logic_vector(511 downto 0) := (others => 'X'); -- data_in_value
-			pio_data_in_read                 : out std_logic_vector(15 downto 0);                     -- data_in_read
-			pio_data_out_value               : out std_logic_vector(511 downto 0);                    -- data_out_value
-			pio_data_out_write               : out std_logic_vector(15 downto 0);                     -- data_out_write
+			pio_data_in_value                : in  std_logic_vector(2048-1 downto 0) := (others => 'X'); -- data_in_value
+			pio_data_in_read                 : out std_logic_vector(64-1 downto 0);                     -- data_in_read
+			pio_data_out_value               : out std_logic_vector(2048-1 downto 0);                    -- data_out_value
+			pio_data_out_write               : out std_logic_vector(64-1 downto 0);                     -- data_out_write
 			reset_reset_n                          : in  std_logic                      := 'X';             -- reset_n
 			uart_0_rxd                       : in  std_logic                      := 'X';             -- rxd
 			uart_0_txd                       : out std_logic;                                          -- txd
