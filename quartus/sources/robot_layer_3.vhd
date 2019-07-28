@@ -81,7 +81,7 @@ architecture rtl of robot_layer_3 is
 
 
     signal w_regs_data_in_value      : std_logic_vector(RegCnt*32-1 downto 0);
-    signal w_regs_data_in_value_mask : std_logic_vector(RegCnt*4-1 downto 0) := (others=>'0');
+    signal w_regs_data_in_value_mask : std_logic_vector(RegCnt*4-1 downto 0) := (others=>'1');
 
 
 begin

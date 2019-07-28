@@ -40,6 +40,7 @@ ENTITY spi_master IS
     cont    : IN     STD_LOGIC;                             --continuous mode command
     clk_div : IN     INTEGER;                               --system clock cycles per 1/2 period of sclk
     addr    : IN     INTEGER;                               --address of slave
+    tx_size : IN     INTEGER range 0 to d_width := d_width;
     tx_data : IN     STD_LOGIC_VECTOR(d_width-1 DOWNTO 0);  --data to transmit
     miso    : IN     STD_LOGIC;                             --master in, slave out
     sclk    : BUFFER STD_LOGIC;                             --spi clock
@@ -100,7 +101,7 @@ BEGIN
             assert_data <= NOT cpha; --set spi clock phase
             tx_buffer <= tx_data;    --clock in data for transmit into buffer
             clk_toggles <= 0;        --initiate clock toggle counter
-            last_bit_rx <= d_width*2 + conv_integer(cpha) - 1; --set last rx data bit
+            last_bit_rx <= tx_size*2 + conv_integer(cpha) - 1; --set last rx data bit
             state <= execute;        --proceed to execute state
           ELSE
             state <= ready;          --remain in ready state

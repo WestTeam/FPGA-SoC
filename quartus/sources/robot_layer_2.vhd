@@ -88,6 +88,11 @@ architecture rtl of robot_layer_2 is
     signal w_regs_data_in_value      : std_logic_vector(RegCnt*32-1 downto 0);
     signal w_regs_data_in_value_mask : std_logic_vector(RegCnt*4-1 downto 0) := (others=>'0');
 
+
+    signal w_motor_value   : int16_t(MOTOR_COUNT-1 downto 0) := (others=>(others=>'0'));
+
+    signal w_qei_value     : int16_t(QEI_COUNT-1 downto 0);
+
     signal w_pos_valid     : std_logic;
     signal w_pos_id        : std_logic_vector(8-1 downto 0);
     signal w_pos_teta      : std_logic_vector(16-1 downto 0);
@@ -121,14 +126,14 @@ architecture rtl of robot_layer_2 is
     end function;
 
 
-    constant PID_COUNT : natural := 4;
+    constant PID_COUNT : natural := 2;
 
-    signal w_pid_en         : std_logic_vector(PID_COUNT-1 downto 0);
-    signal w_pid_acc        : int32_t(PID_COUNT-1 downto 0);
-    signal w_pid_speed      : int32_t(PID_COUNT-1 downto 0);
-    signal w_pid_target     : int32_t(PID_COUNT-1 downto 0);
-    signal w_pid_measure    : int32_t(PID_COUNT-1 downto 0);
-    signal w_pid_output     : int32_t(PID_COUNT-1 downto 0);
+    signal w_pid_en         : std_logic_vector(PID_COUNT-1 downto 0) := (others=>'0');
+    signal w_pid_acc        : int32_t(PID_COUNT-1 downto 0) := (others=>(others=>'0'));
+    signal w_pid_speed      : int32_t(PID_COUNT-1 downto 0) := (others=>(others=>'0'));
+    signal w_pid_target     : int32_t(PID_COUNT-1 downto 0) := (others=>(others=>'0'));
+    signal w_pid_measure    : int32_t(PID_COUNT-1 downto 0) := (others=>(others=>'0'));
+    signal w_pid_output     : int32_t(PID_COUNT-1 downto 0) := (others=>(others=>'0'));
 begin
 	
     w_reset_n <= not reset;
@@ -138,6 +143,66 @@ begin
         regs_data_in_value((i+1)*8-1 downto i*8) <= regs_data_out_value((i+1)*8-1 downto i*8) when w_regs_data_in_value_mask(i) = '0' else w_regs_data_in_value((i+1)*8-1 downto i*8);
     end generate;
 
+
+    b_motor_matrix: block                
+        signal w_motor_matrix_enabled : std_logic;
+    begin
+
+        w_motor_matrix_enabled <= regs_data_out_value(0);
+
+        w_regs_data_in_value_mask((0+1)*4-1 downto (0)*4) <= "1111";
+
+        g_motor: for i in 0 to MOTOR_COUNT-1 generate
+            signal r_index : std_logic_vector(4-1 downto 0);
+        begin
+            p_sync: process(clk,reset) is
+            begin
+                if (reset = '1') then
+                    r_index <= std_logic_vector(to_unsigned(i,r_index'length));
+                    motor_value(i) <= (others=>'0');
+                elsif rising_edge(clk) then
+                    if regs_data_out_write(0) = '1' and unsigned(regs_data_out_value((i+1)*4+8-1 downto i*4+8)) < MOTOR_COUNT then
+                        r_index <= regs_data_out_value((i+1)*4+8-1 downto i*4+8);
+                    end if;
+                    if (w_motor_matrix_enabled = '0') then
+                        r_index <= std_logic_vector(to_unsigned(i,r_index'length));
+                    end if; 
+
+                    motor_value(i) <= w_motor_value(to_integer(unsigned(r_index)));
+                end if;
+            end process;
+        end generate;
+    end block;
+
+    b_qei_matrix: block  
+        signal w_qei_matrix_enabled : std_logic;              
+    begin
+
+        w_qei_matrix_enabled <= regs_data_out_value(32);
+
+        w_regs_data_in_value_mask((1+1)*4-1 downto (1)*4) <= "1111";
+
+        g_motor: for i in 0 to QEI_COUNT-1 generate
+            signal r_index : std_logic_vector(4-1 downto 0);
+        begin
+            p_sync: process(clk,reset) is
+            begin
+                if (reset = '1') then
+                    r_index <= std_logic_vector(to_unsigned(i,r_index'length));
+                    w_qei_value(i) <= (others=>'0');
+                elsif rising_edge(clk) then
+                    if regs_data_out_write(1) = '1' and unsigned(regs_data_out_value(32+(i+1)*4+8-1 downto 32+i*4+8)) < QEI_COUNT then
+                        r_index <= regs_data_out_value(32+(i+1)*4+8-1 downto 32+i*4+8);
+                    end if;
+                    if (w_qei_matrix_enabled = '0') then
+                        r_index <= std_logic_vector(to_unsigned(i,r_index'length));
+                    end if; 
+
+                    w_qei_value(i) <= qei_value(to_integer(unsigned(r_index)));
+                end if;
+            end process;
+        end generate;
+    end block;
 
 
     b_odometry: block
@@ -153,13 +218,13 @@ begin
         w_regs_data_in_value_mask((1+2)*4-1 downto (0+2)*4) <= "1111";
         w_regs_data_in_value_mask((6+9)*4-1 downto (0+9)*4) <= (others=>'1');
 
-        p_async: process(regs_data_out_value,w_pio_data_out_value,qei_value) is
+        p_async: process(regs_data_out_value,w_pio_data_out_value,w_qei_value) is
         begin
             w_pio_data_in_value(1*32-1 downto 0*32)      <= X"00000000";
             w_pio_data_in_value((1+13)*32-1 downto 1*32) <= regs_data_out_value((2+13)*32-1 downto 2*32);
 
             --! we override the values for register 9 & 10 to give QEI inputs
-            w_pio_data_in_value((8+2)*32-1 downto 8*32) <= qei_value(3) & qei_value(2) & qei_value(1) & qei_value(0);
+            w_pio_data_in_value((8+2)*32-1 downto 8*32) <= w_qei_value(3) & w_qei_value(2) & w_qei_value(1) & w_qei_value(0);
 
             w_regs_data_in_value((1+2)*32-1 downto (0+2)*32) <= w_pio_data_out_value((1+1)*32-1 downto (0+1)*32); 
 
@@ -244,9 +309,9 @@ begin
                         r_ref <= regs_data_out_value((REGS_CUSTOM_REF_OFFSET+1)*32-1 downto (REGS_CUSTOM_REF_OFFSET)*32);
                     end if;
 
-                    r_qei_last <= qei_value(4+i);
-                    if qei_value(4+i) /= r_qei_last then
-                        v_diff := to_integer(unsigned(qei_value(4+i)))-to_integer(unsigned(r_qei_last));
+                    r_qei_last <= w_qei_value(4+i);
+                    if w_qei_value(4+i) /= r_qei_last then
+                        v_diff := to_integer(unsigned(w_qei_value(4+i)))-to_integer(unsigned(r_qei_last));
                         if v_diff >= 2**15 then
                             v_diff := v_diff - 2**16;                        
                         end if;
@@ -282,16 +347,16 @@ begin
     w_pid_speed(1)      <= angle_speed;
     w_pid_target(1)     <= angle_target;
 
-    --! not used from Layer 3, override from sw needed to control it
-    w_pid_en(2)         <= '0';
-    w_pid_acc(2)        <= (others=>'0');
-    w_pid_speed(2)      <= (others=>'0');
-    w_pid_target(2)     <= (others=>'0');  
-    
-    w_pid_en(3)         <= '0';
-    w_pid_acc(3)        <= (others=>'0');
-    w_pid_speed(3)      <= (others=>'0');
-    w_pid_target(3)     <= (others=>'0');  
+--    --! not used from Layer 3, override from sw needed to control it
+--    w_pid_en(2)         <= '0';
+--    w_pid_acc(2)        <= (others=>'0');
+--    w_pid_speed(2)      <= (others=>'0');
+--    w_pid_target(2)     <= (others=>'0');  
+--    
+--    w_pid_en(3)         <= '0';
+--    w_pid_acc(3)        <= (others=>'0');
+--    w_pid_speed(3)      <= (others=>'0');
+--    w_pid_target(3)     <= (others=>'0');  
 
     b_motor_pid: block
     begin
@@ -365,109 +430,119 @@ begin
         v_left  := signed(w_pid_output(0)(31) & w_pid_output(0)(16-1 downto 0)) + signed(w_pid_output(1)(31) & w_pid_output(1)(16-1 downto 0));
         v_right := signed(w_pid_output(0)(31) & w_pid_output(0)(16-1 downto 0)) - signed(w_pid_output(1)(31) & w_pid_output(1)(16-1 downto 0));
 
-        motor_value(0) <= std_logic_vector(v_left(16-1 downto 0));
-        motor_value(1) <= std_logic_vector(v_right(16-1 downto 0));
+        w_motor_value(0) <= std_logic_vector(v_left(16-1 downto 0));
+        w_motor_value(1) <= std_logic_vector(v_right(16-1 downto 0));
 
         if v_left > 2**15-1 then
-            motor_value(0) <= std_logic_vector(to_signed(2**15-1,16));
+            w_motor_value(0) <= std_logic_vector(to_signed(2**15-1,16));
         end if;
         if v_left < -2**15 then
-            motor_value(0) <= std_logic_vector(to_signed(-2**15-1,16));
+            w_motor_value(0) <= std_logic_vector(to_signed(-2**15-1,16));
         end if;
 
         if v_right > 2**15-1 then
-            motor_value(1) <= std_logic_vector(to_signed(2**15-1,16));
+            w_motor_value(1) <= std_logic_vector(to_signed(2**15-1,16));
         end if;
         if v_right < -2**15 then
-            motor_value(1) <= std_logic_vector(to_signed(-2**15-1,16));
+            w_motor_value(1) <= std_logic_vector(to_signed(-2**15-1,16));
         end if;
 
     end process;
 
-    motor_value(2) <= w_pid_output(2)(31) & w_pid_output(2)(15-1 downto 0);
-    motor_value(3) <= w_pid_output(3)(31) & w_pid_output(3)(15-1 downto 0);
-    motor_value(4) <= (others=>'0');
-    motor_value(5) <= (others=>'0');
+    g_gen_m2: if (PID_COUNT>=3) generate
+    begin
+        w_motor_value(2) <= w_pid_output(2)(31) & w_pid_output(2)(15-1 downto 0);
+    end generate;
+    
+    g_gen_m3: if (PID_COUNT>=4) generate
+    begin
+        w_motor_value(3) <= w_pid_output(3)(31) & w_pid_output(3)(15-1 downto 0);
+    end generate;
+
+    w_motor_value(4) <= (others=>'0');
+    w_motor_value(5) <= (others=>'0');
 
 
     -- LIDAR BYPASS --
     --uart_tx(2) <= sw_uart_tx(SW_UART_L2_ID_LIDAR);
     --sw_uart_rx(SW_UART_L2_ID_LIDAR) <= uart_rx(2);
 
-    b_lidar: block
-        signal w_pio_data_in_value   :  std_logic_vector(511 downto 0) := (others=>'0');
-    begin
+    g_lidar: if (true) generate
+        
+        b_lidar: block
+            signal w_pio_data_in_value   :  std_logic_vector(511 downto 0) := (others=>'0');
+        begin
 
---    uint8_t pos_valid; // IN  DATA
---    uint8_t pos_id; // IN  DATA
---    int16_t pos_teta; // IN  DATA
---    int16_t pos_x; // IN  DATA
---    int16_t pos_y; // IN  DATA
-
-
-        w_pio_data_in_value(3*32-1 downto 1*32) <=    w_pos_y
-                                                    & w_pos_x
-                                                    & w_pos_teta
-                                                    & w_pos_id
-                                                    & "0000000" & w_pos_valid;
-
-        inst_lidar_rv_1 : system_generic
-        generic map (
-            INIT_FILE => "lidar.hex",
-            MEMORY_SIZE_BYTES => 30*1024
-        )
-        port map (
-            clk                     => clk,
-            reset_n                 => w_reset_n,
-            pio_data_in_value       => w_pio_data_in_value,
-            pio_data_in_read        => open,
-            pio_data_out_value      => open,
-            pio_data_out_write      => open,
-            uart_0_rxd              => uart_rx(0),
-            uart_0_txd              => uart_tx(0),
-            uart_1_rxd              => sw_uart_tx(SW_UART_L2_ID_LIDAR_1),
-            uart_1_txd              => sw_uart_rx(SW_UART_L2_ID_LIDAR_1)
-        );
-
-        inst_lidar_rv_2 : system_generic
-        generic map (
-            INIT_FILE => "lidar.hex",
-            MEMORY_SIZE_BYTES => 30*1024
-        )
-        port map (
-            clk                     => clk,
-            reset_n                 => w_reset_n,
-            pio_data_in_value       => w_pio_data_in_value,
-            pio_data_in_read        => open,
-            pio_data_out_value      => open,
-            pio_data_out_write      => open,
-            uart_0_rxd              => uart_rx(1),
-            uart_0_txd              => uart_tx(1),
-            uart_1_rxd              => sw_uart_tx(SW_UART_L2_ID_LIDAR_2),
-            uart_1_txd              => sw_uart_rx(SW_UART_L2_ID_LIDAR_2)
-        );
-
-        inst_lidar_rv_3 : system_generic
-        generic map (
-            INIT_FILE => "lidar.hex",
-            MEMORY_SIZE_BYTES => 30*1024
-        )
-        port map (
-            clk                     => clk,
-            reset_n                 => w_reset_n,
-            pio_data_in_value       => w_pio_data_in_value,
-            pio_data_in_read        => open,
-            pio_data_out_value      => open,
-            pio_data_out_write      => open,
-            uart_0_rxd              => uart_rx(2),
-            uart_0_txd              => uart_tx(2),
-            uart_1_rxd              => sw_uart_tx(SW_UART_L2_ID_LIDAR_3),
-            uart_1_txd              => sw_uart_rx(SW_UART_L2_ID_LIDAR_3)
-        );
+    --    uint8_t pos_valid; // IN  DATA
+    --    uint8_t pos_id; // IN  DATA
+    --    int16_t pos_teta; // IN  DATA
+    --    int16_t pos_x; // IN  DATA
+    --    int16_t pos_y; // IN  DATA
 
 
-    end block;
+            w_pio_data_in_value(3*32-1 downto 1*32) <=    w_pos_y
+                                                        & w_pos_x
+                                                        & w_pos_teta
+                                                        & w_pos_id
+                                                        & "0000000" & w_pos_valid;
 
+            inst_lidar_rv_1 : system_generic
+            generic map (
+                INIT_FILE => "lidar.hex",
+                MEMORY_SIZE_BYTES => 30*1024
+            )
+            port map (
+                clk                     => clk,
+                reset_n                 => w_reset_n,
+                pio_data_in_value       => w_pio_data_in_value,
+                pio_data_in_read        => open,
+                pio_data_out_value      => open,
+                pio_data_out_write      => open,
+                uart_0_rxd              => uart_rx(0),
+                uart_0_txd              => uart_tx(0),
+                uart_1_rxd              => sw_uart_tx(SW_UART_L2_ID_LIDAR_1),
+                uart_1_txd              => sw_uart_rx(SW_UART_L2_ID_LIDAR_1)
+            );
+
+            inst_lidar_rv_2 : system_generic
+            generic map (
+                INIT_FILE => "lidar.hex",
+                MEMORY_SIZE_BYTES => 30*1024
+            )
+            port map (
+                clk                     => clk,
+                reset_n                 => w_reset_n,
+                pio_data_in_value       => w_pio_data_in_value,
+                pio_data_in_read        => open,
+                pio_data_out_value      => open,
+                pio_data_out_write      => open,
+                uart_0_rxd              => uart_rx(1),
+                uart_0_txd              => uart_tx(1),
+                uart_1_rxd              => sw_uart_tx(SW_UART_L2_ID_LIDAR_2),
+                uart_1_txd              => sw_uart_rx(SW_UART_L2_ID_LIDAR_2)
+            );
+
+            inst_lidar_rv_3 : system_generic
+            generic map (
+                INIT_FILE => "lidar.hex",
+                MEMORY_SIZE_BYTES => 30*1024
+            )
+            port map (
+                clk                     => clk,
+                reset_n                 => w_reset_n,
+                pio_data_in_value       => w_pio_data_in_value,
+                pio_data_in_read        => open,
+                pio_data_out_value      => open,
+                pio_data_out_write      => open,
+                uart_0_rxd              => uart_rx(2),
+                uart_0_txd              => uart_tx(2),
+                uart_1_rxd              => sw_uart_tx(SW_UART_L2_ID_LIDAR_3),
+                uart_1_txd              => sw_uart_rx(SW_UART_L2_ID_LIDAR_3)
+            );
+
+
+        end block;
+    end generate;
 
 end architecture;
 

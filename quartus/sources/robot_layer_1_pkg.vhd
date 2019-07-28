@@ -9,13 +9,13 @@ package robot_layer_1_pkg is
 
     constant MOTOR_COUNT : natural := 6;
     constant QEI_COUNT   : natural := 4+1+1;
-    constant SW_UART_L1_COUNT : natural := 5; 
+    constant SW_UART_L1_COUNT : natural := 6; 
     constant SW_UART_L1_ID_SCREEN      : natural := 0; 
     constant SW_UART_L1_ID_LOW_LEVEL   : natural := 1; 
     constant SW_UART_L1_ID_PROXIMITY_1 : natural := 2; 
     constant SW_UART_L1_ID_PROXIMITY_2 : natural := 3; 
     constant SW_UART_L1_ID_BLUETOOTH   : natural := 4; 
-
+    constant SW_UART_L1_ID_IMU         : natural := 5; 
 	 
     component robot_layer_1 is
     generic (
@@ -148,7 +148,7 @@ package robot_layer_1_pkg is
         spi0_ss      : out std_logic;
 
         spi1_sclk    : out std_logic;
-        spi1_mosi    : in  std_logic;
+        spi1_mosi    : out std_logic;
         spi1_miso    : in  std_logic;
         spi1_ss      : out std_logic;
 

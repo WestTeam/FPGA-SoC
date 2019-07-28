@@ -150,7 +150,7 @@ entity hpsfpga is
     spi0_ss      : out std_logic;
 
     spi1_sclk    : out std_logic;
-    spi1_mosi    : in  std_logic;
+    spi1_mosi    : out std_logic;
     spi1_miso    : in  std_logic;
     spi1_ss      : out std_logic;
 
@@ -336,7 +336,11 @@ architecture hpsfpga_arch of hpsfpga is
             uart_12_rxd                           : in    std_logic                       := 'X';             -- rxd
             uart_12_txd                           : out   std_logic;
             uart_13_rxd                           : in    std_logic                       := 'X';             -- rxd
-            uart_13_txd                           : out   std_logic
+            uart_13_txd                           : out   std_logic;
+            uart_14_rxd                           : in    std_logic                       := 'X';             -- rxd
+            uart_14_txd                           : out   std_logic;
+            uart_15_rxd                           : in    std_logic                       := 'X';             -- rxd
+            uart_15_txd                           : out   std_logic
             );
 	end component hps_fpga;
 
@@ -368,7 +372,7 @@ architecture hpsfpga_arch of hpsfpga is
     
     
     --------- SW UART ----------
-    constant SW_UART_COUNT : natural := 14;
+    constant SW_UART_COUNT : natural := 16;
     signal w_sw_uart_tx       : std_logic_vector(SW_UART_COUNT-1 downto 0);
     signal w_sw_uart_rx       : std_logic_vector(SW_UART_COUNT-1 downto 0);
 
@@ -386,7 +390,9 @@ architecture hpsfpga_arch of hpsfpga is
     constant SW_UART_ID_PROXIMITY_1 : natural := 8; 
     constant SW_UART_ID_BLUETOOTH   : natural := 9; 
     constant SW_UART_ID_PROXIMITY_2 : natural := 13; 
-    
+    constant SW_UART_ID_IMU         : natural := 14;
+    constant SW_UART_ID_UNUSED      : natural := 15;
+     
 
     signal w_motor_value    : int16_t(6-1 downto 0);
     signal w_motor_current  : int24_t(6-1 downto 0);
@@ -468,6 +474,7 @@ begin
         sw_uart_tx(SW_UART_L1_ID_PROXIMITY_1) => w_sw_uart_tx(SW_UART_ID_PROXIMITY_1),
         sw_uart_tx(SW_UART_L1_ID_PROXIMITY_2) => w_sw_uart_tx(SW_UART_ID_PROXIMITY_2),
         sw_uart_tx(SW_UART_L1_ID_BLUETOOTH)   => w_sw_uart_tx(SW_UART_ID_BLUETOOTH),
+        sw_uart_tx(SW_UART_L1_ID_IMU)         => w_sw_uart_tx(SW_UART_ID_IMU),
        
 
         sw_uart_rx(SW_UART_L1_ID_SCREEN)      => w_sw_uart_rx(SW_UART_ID_SCREEN),
@@ -475,7 +482,9 @@ begin
         sw_uart_rx(SW_UART_L1_ID_PROXIMITY_1) => w_sw_uart_rx(SW_UART_ID_PROXIMITY_1),
         sw_uart_rx(SW_UART_L1_ID_PROXIMITY_2) => w_sw_uart_rx(SW_UART_ID_PROXIMITY_2),
         sw_uart_rx(SW_UART_L1_ID_BLUETOOTH)   => w_sw_uart_rx(SW_UART_ID_BLUETOOTH),               
-         
+        sw_uart_rx(SW_UART_L1_ID_IMU)         => w_sw_uart_rx(SW_UART_ID_IMU),               
+
+
         ---------------------------------
         ---------- TO/FROM IOs ----------
         ---------------------------------          
@@ -889,6 +898,12 @@ begin
 		 
 		 uart_13_rxd => w_sw_uart_rx(13),
 		 uart_13_txd => w_sw_uart_tx(13),    
+
+		 uart_14_rxd => w_sw_uart_rx(14),
+		 uart_14_txd => w_sw_uart_tx(14),
+
+		 uart_15_rxd => w_sw_uart_rx(15),
+		 uart_15_txd => w_sw_uart_tx(15),
 
 	    -- HPS DDR3
 	    memory_mem_a                          =>  HPS_DDR3_ADDR ,                       --                memorymem_a

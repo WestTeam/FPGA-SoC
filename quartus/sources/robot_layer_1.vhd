@@ -11,6 +11,7 @@ use     work.pwm_pkg.all;
 use     work.debounce_pkg.all;
 use     work.types_pkg.all;
 use     work.robot_layer_1_pkg.all;
+use     work.system_generic_pkg.all;
 
 entity robot_layer_1 is
     generic (
@@ -143,7 +144,7 @@ entity robot_layer_1 is
         spi0_ss      : out std_logic;
 
         spi1_sclk    : out std_logic;
-        spi1_mosi    : in  std_logic;
+        spi1_mosi    : out std_logic;
         spi1_miso    : in  std_logic;
         spi1_ss      : out std_logic;
 
@@ -279,9 +280,10 @@ architecture rtl of robot_layer_1 is
     constant VOLTAGE_COUNT : natural := 4;
     constant REG_VOLTAGE_OFFSET : natural := 2;
 
-    signal r_voltage      : int24_t(VOLTAGE_COUNT-1 downto 0); 
-    signal r_lv_mux       : std_logic_vector(2-1 downto 0);
-    signal r_voltage_cnt  : std_logic_vector(7-1 downto 0); 
+    signal r_voltage        : int24_t(VOLTAGE_COUNT-1 downto 0); 
+    signal r_voltage_min    : int32_t(VOLTAGE_COUNT-1 downto 0); 
+    signal r_lv_mux         : std_logic_vector(2-1 downto 0);
+    signal r_voltage_cnt    : std_logic_vector(7-1 downto 0); 
 
     constant REG_BUZZER_OFFSET : natural := 6;
 
@@ -326,7 +328,7 @@ begin
 	
     w_reset_n <= not reset;
 
-    imu_ss <= '1';
+    --imu_ss <= '1';
 
     --! we return for read the same written data, expect for some bytes (noted masked) where we compute the value internally
     g_reg: for i in 0 to w_regs_data_in_value_mask'length-1 generate
@@ -415,6 +417,9 @@ begin
         p_sync_voltage_mux: process(clk,reset) is
         begin
             if reset = '1' then
+                r_voltage <= (others=>(others=>'1'));
+                r_voltage_min <= (others=>(others=>'0'));
+
                 r_voltage_cnt <= (others=>'0');
                 r_lv_mux      <= (others=>'0');
                 r_buzzer      <= '0';
@@ -427,9 +432,14 @@ begin
                     end if;
                 end if;
                 
+
                 r_buzzer <= '0';
                 for i in 0 to VOLTAGE_COUNT-1 loop
-                    if unsigned(w_regs_data_in_value(((i+1)+REG_VOLTAGE_OFFSET)*32-1 downto (i+REG_VOLTAGE_OFFSET)*32)) < unsigned(regs_data_out_value(((i+1)+REG_VOLTAGE_OFFSET)*32-1 downto (i+REG_VOLTAGE_OFFSET)*32)) then
+                    if regs_data_out_write(i+REG_VOLTAGE_OFFSET) = '1' then
+                        r_voltage_min(i) <=  regs_data_out_value(((i+1)+REG_VOLTAGE_OFFSET)*32-1 downto (i+REG_VOLTAGE_OFFSET)*32);
+                    end if;
+
+                    if signed(r_voltage(i)) < signed(r_voltage_min(i)) then
                         r_buzzer <= '1';
                     end if;
                 end loop;
@@ -1159,8 +1169,8 @@ begin
     -------------- SPI 1 <==> LAYER2 (UART1) ---------------
 
     spi1_ss      <= uart_tx(1);
-    uart_rx(1)   <= spi1_mosi;
-    spi1_sclk     <= w_pwm_custom_out(1);
+    --uart_rx(1)   <= spi1_mosi;
+    --spi1_sclk     <= w_pwm_custom_out(1);
 
     --------------------------------------------------------
     --------------------------------------------------------
@@ -1176,178 +1186,294 @@ begin
 
 
 
+    g_orca_local_level: if (false) generate
+        
+        b_orca_low_level: block
+        --uint8_t reset;
+        --uint8_t pgm_id;
+        --uint8_t arg[2];
+        --// ADC 1278 Muxed
+        --uint8_t  adc_drdy;  // in // 1
+        --uint8_t  adc_reset; // out
+        --uint8_t  adc_valid; // 
+        --uint8_t  adc_id;
+        --uint32_t adc_value; // 2
+        --// Color Sensor
+        --uint8_t  color_valid; // 3
+        --uint8_t  reserved2[3];
+        --uint16_t R; //4
+        --uint16_t G;
+        --uint16_t B; //5
+        --uint16_t C;
+        --// Distance sensors
+        --uint8_t  dist_valid; // 6
+        --uint8_t  dist_id;
+        --uint8_t  reserved3[2];
+        --uint32_t dist_value; // 7   
 
-    b_orca_low_level: block
-    --uint8_t reset;
-    --uint8_t pgm_id;
-    --uint8_t arg[2];
-    --// ADC 1278 Muxed
-    --uint8_t  adc_drdy;  // in // 1
-    --uint8_t  adc_reset; // out
-    --uint8_t  adc_valid; // 
-    --uint8_t  adc_id;
-    --uint32_t adc_value; // 2
-    --// Color Sensor
-    --uint8_t  color_valid; // 3
-    --uint8_t  reserved2[3];
-    --uint16_t R; //4
-    --uint16_t G;
-    --uint16_t B; //5
-    --uint16_t C;
-    --// Distance sensors
-    --uint8_t  dist_valid; // 6
-    --uint8_t  dist_id;
-    --uint8_t  reserved3[2];
-    --uint32_t dist_value; // 7   
+            signal w_pio_data_in_value   :  std_logic_vector(511 downto 0) := (others=>'0');
+            signal w_pio_data_out_value  :  std_logic_vector(511 downto 0);
+
+            constant REGS_ADC_SERVO_OFFSET : natural := 38;
+
+            constant REGS_COLOR_VALID_OFFSET : natural := 50;
+            constant REGS_COLOR_RG_OFFSET    : natural := 51;
+            constant REGS_COLOR_BC_OFFSET    : natural := 52;
+            constant REGS_DISTANCE_OFFSET    : natural := 53;
+
+            constant REGS_CMD_IN_OFFSET       : natural := 61;
+            constant REGS_CMD_PARAMS_OFFSET   : natural := 62;
+              constant REGS_CMD_OUT_OFFSET      : natural := 63;
+              
+              
+              
+            constant ORCA_REGS_ADC_CFG_OFFSET    : natural := 1;
+            constant ORCA_REGS_ADC_VALUE_OFFSET  : natural := 2;
+            constant ORCA_REGS_COLOR_CFG_OFFSET  : natural := 3;
+            constant ORCA_REGS_COLOR_RG_OFFSET   : natural := 4;
+            constant ORCA_REGS_COLOR_BC_OFFSET   : natural := 5;
+            constant ORCA_REGS_DIST_CFG_OFFSET   : natural := 6;
+            constant ORCA_REGS_DIST_VALUE_OFFSET : natural := 7;
+            constant ORCA_REGS_CMD_IN_OFFSET 	   : natural := 8;
+            constant ORCA_REGS_CMD_PARAMS_OFFSET : natural := 9;
+            constant ORCA_REGS_CMD_OUT_OFFSET 	: natural := 10;
+
+              
+              
+            signal w_adc_muxed_id       : std_logic_vector(8-1 downto 0);
+            signal w_adc_muxed_valid    : std_logic;
+            signal w_adc_muxed_data     : std_logic_vector(32-1 downto 0);
+            signal r_adc_muxed_data     : int32_t(8-1 downto 0);
+
+            signal w_dist_id       : std_logic_vector(8-1 downto 0);
+            signal w_dist_valid    : std_logic;
+            signal w_dist_data     : std_logic_vector(32-1 downto 0);
+
+            signal r_distance : int32_t(8-1 downto 0);
+
+
+        begin
+            --w_regs_data_in_value_mask((1+8+REGS_ADC_SERVO_OFFSET)*4-1    downto (0+REGS_ADC_SERVO_OFFSET)*4)   <= (others=>'1');
+
+            w_regs_data_in_value_mask((1+REGS_COLOR_VALID_OFFSET)*4-1   downto (0+REGS_COLOR_VALID_OFFSET)*4)   <= "1111";
+            w_regs_data_in_value_mask((1+REGS_COLOR_RG_OFFSET)*4-1      downto (0+REGS_COLOR_RG_OFFSET)*4)      <= "1111";
+            w_regs_data_in_value_mask((1+REGS_COLOR_BC_OFFSET)*4-1      downto (0+REGS_COLOR_BC_OFFSET)*4)      <= "1111";
+            w_regs_data_in_value_mask((1+8+REGS_DISTANCE_OFFSET)*4-1    downto (0+REGS_DISTANCE_OFFSET)*4)   <= (others=>'1');
+
+            w_regs_data_in_value_mask((1+REGS_CMD_IN_OFFSET)*4-1      downto (0+REGS_CMD_IN_OFFSET)*4)      <= "1111";
+            w_regs_data_in_value_mask((1+REGS_CMD_PARAMS_OFFSET)*4-1  downto (0+REGS_CMD_PARAMS_OFFSET)*4)  <= "1111";
+            w_regs_data_in_value_mask((1+REGS_CMD_OUT_OFFSET)*4-1     downto (0+REGS_CMD_OUT_OFFSET)*4)     <= "1111";
+
+              
+            p_async: process(regs_data_out_value,w_pio_data_out_value,r_distance) is
+            begin
+                w_pio_data_in_value(1*32-1 downto 0*32)      <= X"00000000";
+
+
+                w_pio_data_in_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1 downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32) <= X"0000000" & "000" & regs_data_out_value(8);
+                w_pio_data_in_value((1+ORCA_REGS_ADC_VALUE_OFFSET)*32-1 downto (0+ORCA_REGS_ADC_VALUE_OFFSET)*32) <= X"0000000" & "000" & regs_data_out_value(8);
+                --w_pio_data_in_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1 downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32)(0) <= regs_data_out_value(8);
+
+
+                
+                for i in 0 to r_distance'length-1 loop
+                    w_regs_data_in_value((1+i+REGS_DISTANCE_OFFSET)*32-1    downto (0+i+REGS_DISTANCE_OFFSET)*32) <= r_distance(i);
+                end loop;
+
+                w_pio_data_in_value((ORCA_REGS_CMD_OUT_OFFSET+1)*32-1 downto (ORCA_REGS_CMD_IN_OFFSET)*32) <= regs_data_out_value((REGS_CMD_OUT_OFFSET+1)*32-1 downto REGS_CMD_IN_OFFSET*32);
+
+
+            end process;
+
+            w_regs_data_in_value((1+REGS_COLOR_VALID_OFFSET)*32-1 downto (0+REGS_COLOR_VALID_OFFSET)*32) <= X"0000000" & "000" & std_norm_range(w_pio_data_out_value((1+ORCA_REGS_COLOR_CFG_OFFSET)*32-1   downto (0+ORCA_REGS_COLOR_CFG_OFFSET)*32))(0);
+
+            w_regs_data_in_value((1+REGS_COLOR_RG_OFFSET)*32-1 downto (0+REGS_COLOR_RG_OFFSET)*32) <= w_pio_data_out_value((1+ORCA_REGS_COLOR_RG_OFFSET)*32-1   downto (0+ORCA_REGS_COLOR_RG_OFFSET)*32);
+            w_regs_data_in_value((1+REGS_COLOR_BC_OFFSET)*32-1 downto (0+REGS_COLOR_BC_OFFSET)*32) <= w_pio_data_out_value((1+ORCA_REGS_COLOR_BC_OFFSET)*32-1   downto (0+ORCA_REGS_COLOR_BC_OFFSET)*32);
+
+            w_regs_data_in_value((1+REGS_CMD_IN_OFFSET)*32-1 downto (0+REGS_CMD_IN_OFFSET)*32)         <= w_pio_data_out_value((1+ORCA_REGS_CMD_IN_OFFSET)*32-1   downto (0+ORCA_REGS_CMD_IN_OFFSET)*32);
+            w_regs_data_in_value((1+REGS_CMD_PARAMS_OFFSET)*32-1 downto (0+REGS_CMD_PARAMS_OFFSET)*32) <= w_pio_data_out_value((1+ORCA_REGS_CMD_PARAMS_OFFSET)*32-1   downto (0+ORCA_REGS_CMD_PARAMS_OFFSET)*32);
+            w_regs_data_in_value((1+REGS_CMD_OUT_OFFSET)*32-1 downto (0+REGS_CMD_OUT_OFFSET)*32)       <= w_pio_data_out_value((1+ORCA_REGS_CMD_OUT_OFFSET)*32-1   downto (0+ORCA_REGS_CMD_OUT_OFFSET)*32);
+
+              
+            --i2c1_reset <= std_norm_range(w_pio_data_out_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1 downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32))(8);
+
+            w_adc_muxed_id      <= std_norm_range(w_pio_data_out_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1   downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32))(32-1 downto 24);
+            w_adc_muxed_valid   <= std_norm_range(w_pio_data_out_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1   downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32))(16);
+            w_adc_muxed_data    <= w_pio_data_out_value((1+ORCA_REGS_ADC_VALUE_OFFSET)*32-1 downto (0+ORCA_REGS_ADC_VALUE_OFFSET)*32);
+     
+            w_dist_id      <= std_norm_range(w_pio_data_out_value((1+ORCA_REGS_DIST_CFG_OFFSET)*32-1   downto (0+ORCA_REGS_DIST_CFG_OFFSET)*32))(16-1 downto 8);
+            w_dist_valid   <= std_norm_range(w_pio_data_out_value((1+ORCA_REGS_DIST_CFG_OFFSET)*32-1   downto (0+ORCA_REGS_DIST_CFG_OFFSET)*32))(0);
+            w_dist_data    <= w_pio_data_out_value((1+ORCA_REGS_DIST_VALUE_OFFSET)*32-1 downto (0+ORCA_REGS_DIST_VALUE_OFFSET)*32);
+
+
+            p_sync: process(clk,reset) is
+            begin
+                if reset = '1' then
+                    r_adc_muxed_data    <= (others=>(others=>'0'));
+                    r_distance          <= (others=>(others=>'0'));
+                elsif rising_edge(clk) then
+                    if w_adc_muxed_valid = '1' then
+                        for i in 0 to r_adc_muxed_data'length-1 loop
+                            if i = unsigned(w_adc_muxed_id) then
+                                r_adc_muxed_data(i) <= w_adc_muxed_data;
+                            end if;
+                        end loop;
+                    end if;
+
+                    if w_dist_valid = '1' then
+                        for i in 0 to r_distance'length-1 loop
+                            if i = unsigned(w_dist_id) then
+                                r_distance(i) <= w_dist_data;
+                            end if;
+                        end loop;
+                    end if;
+                end if;
+            end process;
+
+
+            -- loopback for now
+            sw_uart_rx(SW_UART_L1_ID_LOW_LEVEL) <= sw_uart_tx(SW_UART_L1_ID_LOW_LEVEL);
+            
+            
+            inst_orca_low_level : component system_ll
+            port map (
+                clk_clk                    => clk,                    --                 clk.clk
+                --i2c_master_serial_0_sda_in => i2c0_sda, -- i2c_master_serial_0.sda_in
+                --i2c_master_serial_0_scl_in => i2c0_scl, --                    .scl_in
+                --i2c_master_serial_0_sda_oe => w_i2c_0_sda_oe, --                    .sda_oe
+                --i2c_master_serial_0_scl_oe => w_i2c_0_scl_oe, --                    .scl_oe
+                --i2c_master_serial_1_sda_in => i2c1_sda, -- i2c_master_serial_1.sda_in
+                --i2c_master_serial_1_scl_in => i2c1_scl, --                    .scl_in
+                --i2c_master_serial_1_sda_oe => w_i2c_1_sda_oe, --                    .sda_oe
+                --i2c_master_serial_1_scl_oe => w_i2c_1_scl_oe, --                    .scl_oe
+                pio_data_in_value          => w_pio_data_in_value,          --                 pio.data_in_value
+                pio_data_in_read           => open,           --                    .data_in_read
+                pio_data_out_value         => w_pio_data_out_value,         --                    .data_out_value
+                pio_data_out_write         => open,         --                    .data_out_write
+                reset_reset_n              => not reset,              --               reset.reset_n
+                uart_0_external_rxd        => w_ll_uart_rxd,             
+                uart_0_external_txd        => w_ll_uart_txd,     
+                uart_0_external_transmitting=> w_ll_uart_transmitting
+
+                --uart_0_external_rxd        => CONNECTED_TO_uart_0_external_rxd,        --     uart_0_external.rxd
+                --uart_0_external_txd        => CONNECTED_TO_uart_0_external_txd,        --                    .txd
+            );
+        end block;
+    end generate;
+    
+    b_orca_imu: block
 
         signal w_pio_data_in_value   :  std_logic_vector(511 downto 0) := (others=>'0');
         signal w_pio_data_out_value  :  std_logic_vector(511 downto 0);
 
-        constant REGS_ADC_SERVO_OFFSET : natural := 38;
+        constant SPI_WIDTH      : natural := 20*8;
+        signal w_spi_busy       : std_logic;
+        signal w_spi_en         : std_logic;
+        signal r_spi_en         : std_logic;
+        signal r_spi_enable     : std_logic;
+        signal w_spi_div        : integer RANGE 0 TO 64;
+        signal w_spi_tx_data    : std_logic_vector(SPI_WIDTH-1 downto 0);
+        signal w_spi_tx_size    : integer range 0 to SPI_WIDTH;
+        signal w_spi_rx_data    : std_logic_vector(SPI_WIDTH-1 downto 0);
+        signal w_spi_rx_data_pio_data_in    : std_logic_vector(SPI_WIDTH-1 downto 0);
 
-        constant REGS_COLOR_VALID_OFFSET : natural := 50;
-        constant REGS_COLOR_RG_OFFSET    : natural := 51;
-        constant REGS_COLOR_BC_OFFSET    : natural := 52;
-        constant REGS_DISTANCE_OFFSET    : natural := 53;
-
-        constant REGS_CMD_IN_OFFSET       : natural := 61;
-        constant REGS_CMD_PARAMS_OFFSET   : natural := 62;
-		  constant REGS_CMD_OUT_OFFSET      : natural := 63;
-		  
-		  
-		  
-        constant ORCA_REGS_ADC_CFG_OFFSET    : natural := 1;
-        constant ORCA_REGS_ADC_VALUE_OFFSET  : natural := 2;
-        constant ORCA_REGS_COLOR_CFG_OFFSET  : natural := 3;
-        constant ORCA_REGS_COLOR_RG_OFFSET   : natural := 4;
-        constant ORCA_REGS_COLOR_BC_OFFSET   : natural := 5;
-        constant ORCA_REGS_DIST_CFG_OFFSET   : natural := 6;
-        constant ORCA_REGS_DIST_VALUE_OFFSET : natural := 7;
-        constant ORCA_REGS_CMD_IN_OFFSET 	   : natural := 8;
-        constant ORCA_REGS_CMD_PARAMS_OFFSET : natural := 9;
-        constant ORCA_REGS_CMD_OUT_OFFSET 	: natural := 10;
-
-		  
-		  
-        signal w_adc_muxed_id       : std_logic_vector(8-1 downto 0);
-        signal w_adc_muxed_valid    : std_logic;
-        signal w_adc_muxed_data     : std_logic_vector(32-1 downto 0);
-        signal r_adc_muxed_data     : int32_t(8-1 downto 0);
-
-        signal w_dist_id       : std_logic_vector(8-1 downto 0);
-        signal w_dist_valid    : std_logic;
-        signal w_dist_data     : std_logic_vector(32-1 downto 0);
-
-        signal r_distance : int32_t(8-1 downto 0);
 
 
     begin
-        --w_regs_data_in_value_mask((1+8+REGS_ADC_SERVO_OFFSET)*4-1    downto (0+REGS_ADC_SERVO_OFFSET)*4)   <= (others=>'1');
 
-        w_regs_data_in_value_mask((1+REGS_COLOR_VALID_OFFSET)*4-1   downto (0+REGS_COLOR_VALID_OFFSET)*4)   <= "1111";
-        w_regs_data_in_value_mask((1+REGS_COLOR_RG_OFFSET)*4-1      downto (0+REGS_COLOR_RG_OFFSET)*4)      <= "1111";
-        w_regs_data_in_value_mask((1+REGS_COLOR_BC_OFFSET)*4-1      downto (0+REGS_COLOR_BC_OFFSET)*4)      <= "1111";
-        w_regs_data_in_value_mask((1+8+REGS_DISTANCE_OFFSET)*4-1    downto (0+REGS_DISTANCE_OFFSET)*4)   <= (others=>'1');
+        
+        --! Use SPI1
+        --imu_ss       : out std_logic;
+        --imu_drdy     : in  std_logic;
+        --imu_fsync    : in  std_logic;
+        -- uint32_t unused;
+       
+        -- uint8_t  spi_busy;
+        -- uint8_t  spi_en;
+        -- uint8_t  spi_div;
+        -- uint8_t  spi_tx_size;
+        -- uint8_t  spi_data[16+4];
 
-        w_regs_data_in_value_mask((1+REGS_CMD_IN_OFFSET)*4-1      downto (0+REGS_CMD_IN_OFFSET)*4)      <= "1111";
-        w_regs_data_in_value_mask((1+REGS_CMD_PARAMS_OFFSET)*4-1  downto (0+REGS_CMD_PARAMS_OFFSET)*4)  <= "1111";
-        w_regs_data_in_value_mask((1+REGS_CMD_OUT_OFFSET)*4-1     downto (0+REGS_CMD_OUT_OFFSET)*4)     <= "1111";
 
-		  
-        p_async: process(regs_data_out_value,w_pio_data_out_value,r_distance) is
+
+        w_pio_data_in_value(1*32-1 downto 0*32)      <= X"0000"
+                                                            & "0000000" & imu_fsync
+                                                            & "0000000" & imu_drdy;
+
+        w_pio_data_in_value(2*32-1 downto 1*32)      <= X"000000" & "0000000" & w_spi_busy;
+        w_spi_en       <= std_norm_range(w_pio_data_out_value(2*32-1 downto 1*32))(8);
+        w_spi_div      <= to_integer(unsigned(std_norm_range(w_pio_data_out_value(2*32-1 downto 1*32))(24-1 downto 16)));
+        w_spi_tx_size  <= to_integer(unsigned(std_norm_range(w_pio_data_out_value(2*32-1 downto 1*32))(32-1 downto 24)));
+
+        p_async_spi: process(w_pio_data_out_value,w_spi_rx_data) is
         begin
-            w_pio_data_in_value(1*32-1 downto 0*32)      <= X"00000000";
-
-
-            w_pio_data_in_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1 downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32) <= X"0000000" & "000" & regs_data_out_value(8);
-            w_pio_data_in_value((1+ORCA_REGS_ADC_VALUE_OFFSET)*32-1 downto (0+ORCA_REGS_ADC_VALUE_OFFSET)*32) <= X"0000000" & "000" & regs_data_out_value(8);
-            --w_pio_data_in_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1 downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32)(0) <= regs_data_out_value(8);
-
-
-            
-            for i in 0 to r_distance'length-1 loop
-                w_regs_data_in_value((1+i+REGS_DISTANCE_OFFSET)*32-1    downto (0+i+REGS_DISTANCE_OFFSET)*32) <= r_distance(i);
+            for i in 0 to 20-1 loop
+                w_spi_tx_data((20-i)*8-1 downto (20-1-i)*8)  <= std_norm_range(w_pio_data_out_value(7*32-1 downto 2*32))((i+1)*8-1 downto i*8);
+                w_spi_rx_data_pio_data_in((20-i)*8-1 downto (20-1-i)*8) <= w_spi_rx_data((i+1)*8-1 downto i*8);
             end loop;
-
-            w_pio_data_in_value((ORCA_REGS_CMD_OUT_OFFSET+1)*32-1 downto (ORCA_REGS_CMD_IN_OFFSET)*32) <= regs_data_out_value((REGS_CMD_OUT_OFFSET+1)*32-1 downto REGS_CMD_IN_OFFSET*32);
-
-
         end process;
 
-        w_regs_data_in_value((1+REGS_COLOR_VALID_OFFSET)*32-1 downto (0+REGS_COLOR_VALID_OFFSET)*32) <= X"0000000" & "000" & std_norm_range(w_pio_data_out_value((1+ORCA_REGS_COLOR_CFG_OFFSET)*32-1   downto (0+ORCA_REGS_COLOR_CFG_OFFSET)*32))(0);
+        w_pio_data_in_value(7*32-1 downto 2*32) <= w_spi_rx_data_pio_data_in;
 
-        w_regs_data_in_value((1+REGS_COLOR_RG_OFFSET)*32-1 downto (0+REGS_COLOR_RG_OFFSET)*32) <= w_pio_data_out_value((1+ORCA_REGS_COLOR_RG_OFFSET)*32-1   downto (0+ORCA_REGS_COLOR_RG_OFFSET)*32);
-        w_regs_data_in_value((1+REGS_COLOR_BC_OFFSET)*32-1 downto (0+REGS_COLOR_BC_OFFSET)*32) <= w_pio_data_out_value((1+ORCA_REGS_COLOR_BC_OFFSET)*32-1   downto (0+ORCA_REGS_COLOR_BC_OFFSET)*32);
-
-        w_regs_data_in_value((1+REGS_CMD_IN_OFFSET)*32-1 downto (0+REGS_CMD_IN_OFFSET)*32)         <= w_pio_data_out_value((1+ORCA_REGS_CMD_IN_OFFSET)*32-1   downto (0+ORCA_REGS_CMD_IN_OFFSET)*32);
-        w_regs_data_in_value((1+REGS_CMD_PARAMS_OFFSET)*32-1 downto (0+REGS_CMD_PARAMS_OFFSET)*32) <= w_pio_data_out_value((1+ORCA_REGS_CMD_PARAMS_OFFSET)*32-1   downto (0+ORCA_REGS_CMD_PARAMS_OFFSET)*32);
-        w_regs_data_in_value((1+REGS_CMD_OUT_OFFSET)*32-1 downto (0+REGS_CMD_OUT_OFFSET)*32)       <= w_pio_data_out_value((1+ORCA_REGS_CMD_OUT_OFFSET)*32-1   downto (0+ORCA_REGS_CMD_OUT_OFFSET)*32);
-
-		  
-        --i2c1_reset <= std_norm_range(w_pio_data_out_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1 downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32))(8);
-
-        w_adc_muxed_id      <= std_norm_range(w_pio_data_out_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1   downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32))(32-1 downto 24);
-        w_adc_muxed_valid   <= std_norm_range(w_pio_data_out_value((1+ORCA_REGS_ADC_CFG_OFFSET)*32-1   downto (0+ORCA_REGS_ADC_CFG_OFFSET)*32))(16);
-        w_adc_muxed_data    <= w_pio_data_out_value((1+ORCA_REGS_ADC_VALUE_OFFSET)*32-1 downto (0+ORCA_REGS_ADC_VALUE_OFFSET)*32);
- 
-        w_dist_id      <= std_norm_range(w_pio_data_out_value((1+ORCA_REGS_DIST_CFG_OFFSET)*32-1   downto (0+ORCA_REGS_DIST_CFG_OFFSET)*32))(16-1 downto 8);
-        w_dist_valid   <= std_norm_range(w_pio_data_out_value((1+ORCA_REGS_DIST_CFG_OFFSET)*32-1   downto (0+ORCA_REGS_DIST_CFG_OFFSET)*32))(0);
-        w_dist_data    <= w_pio_data_out_value((1+ORCA_REGS_DIST_VALUE_OFFSET)*32-1 downto (0+ORCA_REGS_DIST_VALUE_OFFSET)*32);
-
-
-        p_sync: process(clk,reset) is
+        p_sync_spi: process(clk,reset)
         begin
             if reset = '1' then
-                r_adc_muxed_data    <= (others=>(others=>'0'));
-                r_distance          <= (others=>(others=>'0'));
+                r_spi_en <= '0';
             elsif rising_edge(clk) then
-                if w_adc_muxed_valid = '1' then
-                    for i in 0 to r_adc_muxed_data'length-1 loop
-                        if i = unsigned(w_adc_muxed_id) then
-                            r_adc_muxed_data(i) <= w_adc_muxed_data;
-                        end if;
-                    end loop;
-                end if;
-
-                if w_dist_valid = '1' then
-                    for i in 0 to r_distance'length-1 loop
-                        if i = unsigned(w_dist_id) then
-                            r_distance(i) <= w_dist_data;
-                        end if;
-                    end loop;
+                r_spi_en <= w_spi_en;
+                r_spi_enable <= '0';
+                if w_spi_en = '1' and r_spi_en = '0' then
+                    r_spi_enable <= '1';                    
                 end if;
             end if;
         end process;
 
 
-        -- loopback for now
-        sw_uart_rx(SW_UART_L1_ID_LOW_LEVEL) <= sw_uart_tx(SW_UART_L1_ID_LOW_LEVEL);
-        
-        
-	    inst_orca_low_level : component system_ll
-	    port map (
-		    clk_clk                    => clk,                    --                 clk.clk
-		    --i2c_master_serial_0_sda_in => i2c0_sda, -- i2c_master_serial_0.sda_in
-		    --i2c_master_serial_0_scl_in => i2c0_scl, --                    .scl_in
-		    --i2c_master_serial_0_sda_oe => w_i2c_0_sda_oe, --                    .sda_oe
-		    --i2c_master_serial_0_scl_oe => w_i2c_0_scl_oe, --                    .scl_oe
-		    --i2c_master_serial_1_sda_in => i2c1_sda, -- i2c_master_serial_1.sda_in
-		    --i2c_master_serial_1_scl_in => i2c1_scl, --                    .scl_in
-		    --i2c_master_serial_1_sda_oe => w_i2c_1_sda_oe, --                    .sda_oe
-		    --i2c_master_serial_1_scl_oe => w_i2c_1_scl_oe, --                    .scl_oe
-		    pio_data_in_value          => w_pio_data_in_value,          --                 pio.data_in_value
-		    pio_data_in_read           => open,           --                    .data_in_read
-		    pio_data_out_value         => w_pio_data_out_value,         --                    .data_out_value
-		    pio_data_out_write         => open,         --                    .data_out_write
-		    reset_reset_n              => not reset,              --               reset.reset_n
-		    uart_0_external_rxd        => w_ll_uart_rxd,             
-		    uart_0_external_txd        => w_ll_uart_txd,     
-		    uart_0_external_transmitting=> w_ll_uart_transmitting
+        inst_spi_imu: spi_master
+        generic map(
+            slaves => 1,
+            d_width => w_spi_tx_data'length
+        )
+        port map (
+            clock     => clk,
+            reset_n => w_reset_n,                             
+            enable  => r_spi_enable,                               
+            cpol    => '0',
+            cpha    => '0',
+            cont    => '0',
+            clk_div => w_spi_div,
+            addr    => 0,
+            tx_size => w_spi_tx_size,
+            tx_data => w_spi_tx_data,
+            miso    => spi1_miso,
+            mosi    => spi1_mosi,
+            sclk    => spi1_sclk,
+            ss_n(0) => imu_ss,
+            busy    => w_spi_busy,
+            rx_data => w_spi_rx_data
 
-		    --uart_0_external_rxd        => CONNECTED_TO_uart_0_external_rxd,        --     uart_0_external.rxd
-		    --uart_0_external_txd        => CONNECTED_TO_uart_0_external_txd,        --                    .txd
-	    );
+        );	
+
+
+        inst_imu_rv : system_generic
+        generic map (
+            INIT_FILE => "imu.hex",
+            MEMORY_SIZE_BYTES => 20*1024
+        )
+        port map (
+            clk                     => clk,
+            reset_n                 => w_reset_n,
+            pio_data_in_value       => w_pio_data_in_value,
+            pio_data_in_read        => open,
+            pio_data_out_value      => w_pio_data_out_value,
+            pio_data_out_write      => open,
+			uart_0_rxd              => sw_uart_tx(SW_UART_L1_ID_IMU),
+			uart_0_txd              => sw_uart_rx(SW_UART_L1_ID_IMU)
+        );
+
+
     end block;
+    
 	 	 
 end architecture;
 

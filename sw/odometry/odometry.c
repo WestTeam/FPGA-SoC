@@ -359,7 +359,7 @@ int main()
         odo_update_pos_error_input(&odo,regs);
 
         // update motor encoders 
-        odo_update_state(&odo.ms,&regs->m_qei_value[0],&regs->odo_sum_m_distance,&regs->odo_sum_m_angle,0.0,0);
+        odo_update_state(&odo.ms,&regs->m_qei_value[0],&regs->odo_sum_m_distance,&regs->odo_sum_m_angle,0.0,1);
         // update coding wheel encoders
         odo_update_state(&odo.cs,&regs->c_qei_value[0],&regs->odo_sum_c_distance,&regs->odo_sum_c_angle,odo.e_teta_rad,1);
 
