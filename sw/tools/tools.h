@@ -42,7 +42,7 @@ void uart_rs232_buffer_tx_process(uart_tx_state* state);
 
 typedef struct {
     uint8_t     fanion;
-    uint16_t    size;
+    uint16_t    size; // size total including header
     uint16_t    crc; // sum des data + id
     uint16_t    id;
 } __attribute__((packed)) ProtocolHeader;
@@ -60,11 +60,7 @@ uint16_t ts_cycles_to_freq(uint32_t cycles);
 uint8_t ts_is_elapsed(uint32_t ts_start, uint32_t period);
 void ts_wait_until_elapsed(uint32_t ts_start, uint32_t period);
 
-
-
-
-//int32_t int24_to_int32(int32_t data);
-
+uint64_t get_time64();
 
 
 /*
@@ -107,33 +103,7 @@ size_t strlen(const char *s);
 char* itoa(int num, char* str, int base);
 
 
-
-
-
 void print_int(int i,uint8_t ret);
 
 void print_float(float f,uint8_t ret);
 
-
-
-#define M_PI           3.14159265358979323846
-
-float __kernel_cosf(float x, float y);
-
-
-
-float __kernel_sinf(float x, float y, int iy);
-
-
-float __sinf(float x);
-
-
-float __cosf(float x);
-
-float __ieee754_sqrtf(float x);
-float __fabsf(float x);
-
-float __atanf(float x);
-
-float
-__ieee754_atan2f (float y, float x);

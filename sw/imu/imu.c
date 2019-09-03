@@ -6,39 +6,9 @@
  #include "tools.h"
 
 
-//Magnetometer Registers
-#define AK8963_ADDRESS   0x0C
-#define WHO_AM_I_AK8963  0x00 // should return 0x48
-#define INFO             0x01
-#define AK8963_ST1       0x02  // data ready status bit 0
-#define AK8963_XOUT_L    0x03  // data
-#define AK8963_XOUT_H    0x04
-#define AK8963_YOUT_L    0x05
-#define AK8963_YOUT_H    0x06
-#define AK8963_ZOUT_L    0x07
-#define AK8963_ZOUT_H    0x08
-#define AK8963_ST2       0x09  // Data overflow bit 3 and data read error status bit 2
-#define AK8963_CNTL      0x0A  // Power down (0000), single-measurement (0001), self-test (1000) and Fuse ROM (1111) modes on bits 3:0
-#define AK8963_CNTL2     0x0B  // Reset
-#define AK8963_ASTC      0x0C  // Self test control
-#define AK8963_I2CDIS    0x0F  // I2C disable
-#define AK8963_ASAX      0x10  // Fuse ROM x-axis sensitivity adjustment value
-#define AK8963_ASAY      0x11  // Fuse ROM y-axis sensitivity adjustment value
-#define AK8963_ASAZ      0x12  // Fuse ROM z-axis sensitivity adjustment value
-
 #define SELF_TEST_X_GYRO 0x00                  
 #define SELF_TEST_Y_GYRO 0x01                                                                          
 #define SELF_TEST_Z_GYRO 0x02
-
-/*#define X_FINE_GAIN      0x03 // [7:0] fine gain
-#define Y_FINE_GAIN      0x04
-#define Z_FINE_GAIN      0x05
-#define XA_OFFSET_H      0x06 // User-defined trim values for accelerometer
-#define XA_OFFSET_L_TC   0x07
-#define YA_OFFSET_H      0x08
-#define YA_OFFSET_L_TC   0x09
-#define ZA_OFFSET_H      0x0A
-#define ZA_OFFSET_L_TC   0x0B */
 
 #define SELF_TEST_X_ACCEL 0x0D
 #define SELF_TEST_Y_ACCEL 0x0E    
@@ -170,13 +140,6 @@
 #define M_8Hz   0x02
 #define M_100Hz 0x06
 
-// Define I2C addresses of the two MPU9250
-#define MPU9250_1_ADDRESS 0x68   // Device address when ADO = 0
-#define MPU1              0x68
-#define MPU9250_2_ADDRESS 0x69   // Device address when ADO = 1
-#define MPU2              0x69
-#define AK8963_ADDRESS    0x0C   //  Address of magnetometer
-
 
 typedef struct regs_mapping
 {
@@ -238,318 +201,268 @@ typedef struct {
 } __attribute__((packed)) serial_debug_t;
 
 
+// some registers cannot be accessed at full spi speed (20mhz)
+#define SPI_LOW_SPEED_DIV 64
+#define SPI_HIGH_SPEED_DIV 3
+
 void spi_init(volatile regs_mapping_t* mapping)
 {
     mapping->spi_en = 0;
-    mapping->spi_div = 64;
+    mapping->spi_div = SPI_LOW_SPEED_DIV;
 }
 
+#define readBytes(x,y,z,zz) spi_read(x,y,zz,z)
 
-void spi_write(volatile regs_mapping_t* mapping, uint8_t addr, uint8_t* data, uint8_t datalen)
+
+void spi_write(volatile regs_mapping_t* regs, uint8_t addr, uint8_t* data, uint8_t datalen)
+{
+    uint8_t i;
+
+    delay(10);
+    while(regs->spi_busy);
+
+    regs->spi_tx_size = 8+datalen*8;
+    regs->spi_data[0] = addr;
+
+    for (i=0;i<datalen;i++)
+    {
+        regs->spi_data[i+1] = data[i];
+
+    }
+    regs->spi_en = 1;
+    delay(1);
+    regs->spi_en = 0;
+}
+
+void spi_read(volatile regs_mapping_t* regs, uint8_t addr, uint8_t* data, uint8_t datalen)
 {
     int i;
 
     delay(10);
-    while(mapping->spi_busy);
+    while(regs->spi_busy);
 
-    mapping->spi_tx_size = 8+datalen*8;
-    mapping->spi_data[0] = addr;
+    regs->spi_tx_size = 8+datalen*8;
+    regs->spi_data[0] = addr | 0x80;
 
     for (i=0;i<datalen;i++)
     {
-        mapping->spi_data[i+1] = data[i];
+        regs->spi_data[i+1] = 0x00;
 
     }
-    mapping->spi_en = 1;
+    regs->spi_en = 1;
     delay(1);
-    mapping->spi_en = 0;
-}
+    regs->spi_en = 0;
 
-void spi_read(volatile regs_mapping_t* mapping, uint8_t addr, uint8_t* data, uint8_t datalen)
-{
-    int i;
-
-    delay(10);
-    while(mapping->spi_busy);
-
-    mapping->spi_tx_size = 8+datalen*8;
-    mapping->spi_data[0] = addr | 0x80;
+    while(regs->spi_busy);
 
     for (i=0;i<datalen;i++)
     {
-        mapping->spi_data[i+1] = 0x00;
-
-    }
-    mapping->spi_en = 1;
-    delay(1);
-    mapping->spi_en = 0;
-
-    while(mapping->spi_busy);
-
-    for (i=0;i<datalen;i++)
-    {
-        data[i] = mapping->spi_data[20-(datalen)+i];
+        data[i] = regs->spi_data[20-(datalen)+i];
     }
 }
 
 
-void writeByte(volatile regs_mapping_t* MPUnum, uint8_t addr, uint8_t data)
+void writeByte(volatile regs_mapping_t* regs, uint8_t addr, uint8_t data)
 {
     uint8_t data_local = data;
-    spi_write(MPUnum,addr,&data_local,1);
+    spi_write(regs,addr,&data_local,1);
 }
 
-uint8_t readByte(volatile regs_mapping_t* MPUnum, uint8_t addr)
+uint8_t readByte(volatile regs_mapping_t* regs, uint8_t addr)
 {
     uint8_t ret;
-    spi_read(MPUnum,addr,&ret,1);
+    spi_read(regs,addr,&ret,1);
     return ret;
 }
 
 
 
-void MPU9250_initMPU9250(volatile regs_mapping_t* MPUnum, uint8_t Ascale, uint8_t Gscale, uint8_t sampleRate)
-{  
- // wake up device
-  writeByte(MPUnum, PWR_MGMT_1, 0x00); // Clear sleep mode bit (6), enable all sensors 
-  delay(100); // Wait for all registers to reset 
-
- // get stable time source
-  writeByte(MPUnum, PWR_MGMT_1, 0x01);  // Auto select clock source to be PLL gyroscope reference if ready else
-  delay(200); 
-
-
- // Configure Gyro and Thermometer
- // Disable FSYNC and set thermometer and gyro bandwidth to 41 and 42 Hz, respectively; 
- // minimum delay time for this setting is 5.9 ms, which means sensor fusion update rates cannot
- // be higher than 1 / 0.0059 = 170 Hz
- // DLPF_CFG = bits 2:0 = 011; this limits the sample rate to 1000 Hz for both
- // With the MPU9250, it is possible to get gyro sample rates of 32 kHz (!), 8 kHz, or 1 kHz
-  writeByte(MPUnum, CONFIG, 0x03);  
-
- // Set sample rate = gyroscope output rate/(1 + SMPLRT_DIV)
-  writeByte(MPUnum, SMPLRT_DIV, sampleRate);  // Use a 200 Hz rate; a rate consistent with the filter update rate 
-                                                       // determined inset in CONFIG above
- 
- // Set gyroscope full scale range
- // Range selects FS_SEL and AFS_SEL are 0 - 3, so 2-bit values are left-shifted into positions 4:3
-  uint8_t c = readByte(MPUnum, GYRO_CONFIG); // get current GYRO_CONFIG register value
- // c = c & ~0xE0; // Clear self-test bits [7:5] 
-  c = c & ~0x02; // Clear Fchoice bits [1:0] 
-  c = c & ~0x18; // Clear AFS bits [4:3]
-  c = c | Gscale << 3; // Set full scale range for the gyro
- // c =| 0x00; // Set Fchoice for the gyro to 11 by writing its inverse to bits 1:0 of GYRO_CONFIG
-  writeByte(MPUnum, GYRO_CONFIG, c ); // Write new GYRO_CONFIG value to register
-  
- // Set accelerometer full-scale range configuration
-  c = readByte(MPUnum, ACCEL_CONFIG); // get current ACCEL_CONFIG register value
- // c = c & ~0xE0; // Clear self-test bits [7:5] 
-  c = c & ~0x18;  // Clear AFS bits [4:3]
-  c = c | Ascale << 3; // Set full scale range for the accelerometer 
-  writeByte(MPUnum, ACCEL_CONFIG, c); // Write new ACCEL_CONFIG register value
-
- // Set accelerometer sample rate configuration
- // It is possible to get a 4 kHz sample rate from the accelerometer by choosing 1 for
- // accel_fchoice_b bit [3]; in this case the bandwidth is 1.13 kHz
-  c = readByte(MPUnum, ACCEL_CONFIG2); // get current ACCEL_CONFIG2 register value
-  c = c & ~0x0F; // Clear accel_fchoice_b (bit 3) and A_DLPFG (bits [2:0])  
-  c = c | 0x03;  // Set accelerometer rate to 1 kHz and bandwidth to 41 Hz
-  writeByte(MPUnum, ACCEL_CONFIG2, c); // Write new ACCEL_CONFIG2 register value
-
- // The accelerometer, gyro, and thermometer are set to 1 kHz sample rates, 
- // but all these rates are further reduced by a factor of 5 to 200 Hz because of the SMPLRT_DIV setting
-
-  // Configure Interrupts and Bypass Enable
-  // Set interrupt pin active high, push-pull, hold interrupt pin level HIGH until interrupt cleared,
-  // clear on read of INT_STATUS, and enable I2C_BYPASS_EN so additional chips 
-  // can join the I2C bus and all can be controlled by the Arduino as master
-   writeByte(MPUnum, INT_PIN_CFG, 0x10);  // INT is 50 microsecond pulse and any read to clear  
-   writeByte(MPUnum, INT_ENABLE, 0x01);   // Enable data ready (bit 0) interrupt
-   delay(100);
-
-  writeByte(MPUnum, USER_CTRL, 0x20);          // Enable I2C Master mode  
-  writeByte(MPUnum, I2C_MST_CTRL, 0x1D);       // I2C configuration STOP after each transaction, master I2C bus at 400 KHz
-  writeByte(MPUnum, I2C_MST_DELAY_CTRL, 0x00); // Use blocking data retreival and enable delay for mag sample rate mismatch
-  writeByte(MPUnum, I2C_SLV4_CTRL, 0x00);      // Delay mag data retrieval to once every other accel/gyro data sample
-}
-
-
-#define readBytes(x,y,z,zz) spi_read(x,y,zz,z)
-
-
-  uint8_t MPU9250_getAK8963CID(volatile regs_mapping_t* MPUnum)
-{
-//  uint8_t c = readByte(AK8963_ADDRESS, WHO_AM_I_AK8963);  // Read WHO_AM_I register for MPU-9250
-  writeByte(MPUnum, USER_CTRL, 0x20);    // Enable I2C Master mode  
-  writeByte(MPUnum, I2C_MST_CTRL, 0x00); // I2C configuration multi-master I2C 400KHz
-
-  writeByte(MPUnum, I2C_SLV4_ADDR, AK8963_ADDRESS | 0x80);    // Set the I2C slave address of AK8963 and set for read.
-  writeByte(MPUnum, I2C_SLV4_REG, WHO_AM_I_AK8963);           // I2C slave 0 register address from where to begin data transfer
-  writeByte(MPUnum, I2C_SLV4_CTRL, 0x80);                     // Enable I2C and transfer 1 byte
-  delay(100000);
-  uint8_t c = readByte(MPUnum, I2C_SLV4_DI);             // Read the WHO_AM_I byte
-  return c;
-}
-
-
-void MPU9250_initAK8963Slave(volatile regs_mapping_t* MPUnum, uint8_t Mscale, uint8_t Mmode, float * magCalibration)
-{
-   // First extract the factory calibration for each magnetometer axis
-   uint8_t rawData[3];  // x/y/z gyro calibration data stored here
-//   _Mmode = Mmode;
-
-   writeByte(MPUnum, I2C_SLV4_ADDR, AK8963_ADDRESS);           // Set the I2C slave address of AK8963 and set for write.
-   writeByte(MPUnum, I2C_SLV4_REG, AK8963_CNTL2);              // I2C slave 0 register address from where to begin data transfer
-   writeByte(MPUnum, I2C_SLV4_DO, 0x01);                       // Reset AK8963
-   writeByte(MPUnum, I2C_SLV4_CTRL, 0x80);                     // Enable I2C and write 1 byte
-   delay(100000);
-   writeByte(MPUnum, I2C_SLV4_ADDR, AK8963_ADDRESS);           // Set the I2C slave address of AK8963 and set for write.
-   writeByte(MPUnum, I2C_SLV4_REG, AK8963_CNTL);               // I2C slave 0 register address from where to begin data transfer
-   writeByte(MPUnum, I2C_SLV4_DO, 0x00);                       // Power down magnetometer  
-   writeByte(MPUnum, I2C_SLV4_CTRL, 0x80);                     // Enable I2C and write 1 byte
-   delay(100000);
-   writeByte(MPUnum, I2C_SLV4_ADDR, AK8963_ADDRESS);           // Set the I2C slave address of AK8963 and set for write.
-   writeByte(MPUnum, I2C_SLV4_REG, AK8963_CNTL);               // I2C slave 0 register address from where to begin data transfer
-   writeByte(MPUnum, I2C_SLV4_DO, 0x0F);                       // Enter fuze mode
-   writeByte(MPUnum, I2C_SLV4_CTRL, 0x80);                     // Enable I2C and write 1 byte
-   delay(100000);
-   
-   writeByte(MPUnum, I2C_SLV4_ADDR, AK8963_ADDRESS | 0x80);    // Set the I2C slave address of AK8963 and set for read.
-   writeByte(MPUnum, I2C_SLV4_REG, AK8963_ASAX);               // I2C slave 0 register address from where to begin data transfer
-   writeByte(MPUnum, I2C_SLV4_CTRL, 0x80);                     // Enable I2C and read 3 bytes
-   delay(100000);
-   readBytes(MPUnum, I2C_SLV4_DI, 1, &rawData[0]);        // Read the x-, y-, and z-axis calibration values
-   magCalibration[0] =  (float)(rawData[0] - 128)/256.0f + 1.0f;        // Return x-axis sensitivity adjustment values, etc.
-
-
-   writeByte(MPUnum, I2C_SLV4_ADDR, AK8963_ADDRESS | 0x80);    // Set the I2C slave address of AK8963 and set for read.
-   writeByte(MPUnum, I2C_SLV4_REG, AK8963_ASAY);               // I2C slave 0 register address from where to begin data transfer
-   writeByte(MPUnum, I2C_SLV4_CTRL, 0x80);                     // Enable I2C and read 3 bytes
-   delay(100000);
-   readBytes(MPUnum, I2C_SLV4_DI, 1, &rawData[0]);        // Read the x-, y-, and z-axis calibration values
-   magCalibration[1] =  (float)(rawData[0] - 128)/256.0f + 1.0f;        // Return x-axis sensitivity adjustment values, etc.
- 
-
-   writeByte(MPUnum, I2C_SLV4_ADDR, AK8963_ADDRESS | 0x80);    // Set the I2C slave address of AK8963 and set for read.
-   writeByte(MPUnum, I2C_SLV4_REG, AK8963_ASAZ);               // I2C slave 0 register address from where to begin data transfer
-   writeByte(MPUnum, I2C_SLV4_CTRL, 0x80);                     // Enable I2C and read 3 bytes
-   delay(100000);
-   readBytes(MPUnum, I2C_SLV4_DI, 1, &rawData[0]);        // Read the x-, y-, and z-axis calibration values
-   magCalibration[2] =  (float)(rawData[0] - 128)/256.0f + 1.0f;        // Return x-axis sensitivity adjustment values, etc.
- 
-
-   //magCalibration[1] =  (float)(rawData[1] - 128)/256.0f + 1.0f;  
-   //magCalibration[2] =  (float)(rawData[2] - 128)/256.0f + 1.0f; 
-   
-   writeByte(MPUnum, I2C_SLV4_ADDR, AK8963_ADDRESS);           // Set the I2C slave address of AK8963 and set for write.
-   writeByte(MPUnum, I2C_SLV4_REG, AK8963_CNTL);               // I2C slave 0 register address from where to begin data transfer
-   writeByte(MPUnum, I2C_SLV4_DO, 0x00);                       // Power down magnetometer  
-   writeByte(MPUnum, I2C_SLV4_CTRL, 0x80);                     // Enable I2C and transfer 1 byte
-   delay(100000);
-
-   writeByte(MPUnum, I2C_SLV4_ADDR, AK8963_ADDRESS);           // Set the I2C slave address of AK8963 and set for write.
-   writeByte(MPUnum, I2C_SLV4_REG, AK8963_CNTL);               // I2C slave 0 register address from where to begin data transfer 
-   // Configure the magnetometer for continuous read and highest resolution
-   // set Mscale bit 4 to 1 (0) to enable 16 (14) bit resolution in CNTL register,
-   // and enable continuous mode data acquisition Mmode (bits [3:0]), 0010 for 8 Hz and 0110 for 100 Hz sample rates
-   writeByte(MPUnum, I2C_SLV4_DO, Mscale << 4 | Mmode);        // Set magnetometer data resolution and sample ODR
-   writeByte(MPUnum, I2C_SLV4_CTRL, 0x80);                     // Enable I2C and transfer 1 byte
-   delay(100000);
-}
-
-
-
-
-
-void MPU9250_readMagData(volatile regs_mapping_t* MPUnum, int16_t * destination)
-{
-  uint8_t rawData[7];  // x/y/z gyro register data, ST2 register stored here, must read ST2 at end of data acquisition
-//  readBytes(AK8963_ADDRESS, AK8963_XOUT_L, 7, &rawData[0]);  // Read the six raw data and ST2 registers sequentially into data array
-   writeByte(MPUnum, I2C_SLV4_ADDR, AK8963_ADDRESS | 0x80);    // Set the I2C slave address of AK8963 and set for read.
-   writeByte(MPUnum, I2C_SLV4_REG, AK8963_XOUT_L);             // I2C slave 0 register address from where to begin data transfer
-   writeByte(MPUnum, I2C_SLV4_CTRL, 0x80);                     // Enable I2C and read 7 bytes
-   delay(100000);
-   readBytes(MPUnum, I2C_SLV4_DI, 1, &rawData[0]);        // Read the x-, y-, and z-axis calibration values
-  
-   writeByte(MPUnum, I2C_SLV4_ADDR, AK8963_ADDRESS | 0x80);    // Set the I2C slave address of AK8963 and set for read.
-   writeByte(MPUnum, I2C_SLV4_REG, AK8963_XOUT_H);             // I2C slave 0 register address from where to begin data transfer
-   writeByte(MPUnum, I2C_SLV4_CTRL, 0x80);                     // Enable I2C and read 7 bytes
-   delay(100000);
-   readBytes(MPUnum, I2C_SLV4_DI, 1, &rawData[1]);        // Read the x-, y-, and z-axis calibration values
-  
-   destination[0] = ((int16_t)rawData[1] << 8) | rawData[0] ;  // Turn the MSB and LSB into a signed 16-bit value
-
-
-
-   writeByte(MPUnum, I2C_SLV4_ADDR, AK8963_ADDRESS | 0x80);    // Set the I2C slave address of AK8963 and set for read.
-   writeByte(MPUnum, I2C_SLV4_REG, AK8963_YOUT_L);             // I2C slave 0 register address from where to begin data transfer
-   writeByte(MPUnum, I2C_SLV4_CTRL, 0x80);                     // Enable I2C and read 7 bytes
-   delay(100000);
-   readBytes(MPUnum, I2C_SLV4_DI, 1, &rawData[0]);        // Read the x-, y-, and z-axis calibration values
-  
-   writeByte(MPUnum, I2C_SLV4_ADDR, AK8963_ADDRESS | 0x80);    // Set the I2C slave address of AK8963 and set for read.
-   writeByte(MPUnum, I2C_SLV4_REG, AK8963_YOUT_H);             // I2C slave 0 register address from where to begin data transfer
-   writeByte(MPUnum, I2C_SLV4_CTRL, 0x80);                     // Enable I2C and read 7 bytes
-   delay(100000);
-   readBytes(MPUnum, I2C_SLV4_DI, 1, &rawData[1]);        // Read the x-, y-, and z-axis calibration values
-  
-   destination[1] = ((int16_t)rawData[1] << 8) | rawData[0] ;  // Turn the MSB and LSB into a signed 16-bit value
-
-
-
-   writeByte(MPUnum, I2C_SLV4_ADDR, AK8963_ADDRESS | 0x80);    // Set the I2C slave address of AK8963 and set for read.
-   writeByte(MPUnum, I2C_SLV4_REG, AK8963_ZOUT_L);             // I2C slave 0 register address from where to begin data transfer
-   writeByte(MPUnum, I2C_SLV4_CTRL, 0x80);                     // Enable I2C and read 7 bytes
-   delay(100000);
-   readBytes(MPUnum, I2C_SLV4_DI, 1, &rawData[0]);        // Read the x-, y-, and z-axis calibration values
-  
-   writeByte(MPUnum, I2C_SLV4_ADDR, AK8963_ADDRESS | 0x80);    // Set the I2C slave address of AK8963 and set for read.
-   writeByte(MPUnum, I2C_SLV4_REG, AK8963_ZOUT_H);             // I2C slave 0 register address from where to begin data transfer
-   writeByte(MPUnum, I2C_SLV4_CTRL, 0x80);                     // Enable I2C and read 7 bytes
-   delay(100000);
-   readBytes(MPUnum, I2C_SLV4_DI, 1, &rawData[1]);        // Read the x-, y-, and z-axis calibration values
-  
-   destination[2] = ((int16_t)rawData[1] << 8) | rawData[0] ;  // Turn the MSB and LSB into a signed 16-bit value
-
-
-
-
-
-   writeByte(MPUnum, I2C_SLV4_ADDR, AK8963_ADDRESS | 0x80);    // Set the I2C slave address of AK8963 and set for read.
-   writeByte(MPUnum, I2C_SLV4_REG, AK8963_ST2);             // I2C slave 0 register address from where to begin data transfer
-   writeByte(MPUnum, I2C_SLV4_CTRL, 0x80);                     // Enable I2C and read 7 bytes
-   delay(100000);
-   readBytes(MPUnum, I2C_SLV4_DI, 1, &rawData[0]);        // Read the x-, y-, and z-axis calibration values
-  
-   uint8_t c = rawData[0];  // Turn the MSB and LSB into a signed 16-bit value
-
-    if((c & 0x08))
-        jtaguart_puts("overflow\n");
- /*uint8_t c = rawData[6]; // End data read by reading ST2 register
-   if(!(c & 0x08)) { // Check if magnetic sensor overflow set, if not then report data
-   destination[0] = ((int16_t)rawData[1] << 8) | rawData[0] ;  // Turn the MSB and LSB into a signed 16-bit value
-   destination[1] = ((int16_t)rawData[3] << 8) | rawData[2] ;  // Data stored as little Endian
-   destination[2] = ((int16_t)rawData[5] << 8) | rawData[4] ; 
-   } else {
-    jtaguart_puts("overflow\n");
-    }*/
-}
-
-void MPU9250_readMPU9250Data(volatile regs_mapping_t* MPUnum, int16_t * destination)
-{
-  uint8_t rawData[14];  // x/y/z accel register data stored here
-  readBytes(MPUnum, ACCEL_XOUT_H, 14, &rawData[0]);  // Read the 14 raw data registers into data array
-  destination[0] = ((int16_t)rawData[0] << 8) | rawData[1] ;  // Turn the MSB and LSB into a signed 16-bit value
-  destination[1] = ((int16_t)rawData[2] << 8) | rawData[3] ;  
-  destination[2] = ((int16_t)rawData[4] << 8) | rawData[5] ; 
-  destination[3] = ((int16_t)rawData[6] << 8) | rawData[7] ;   
-  destination[4] = ((int16_t)rawData[8] << 8) | rawData[9] ;  
-  destination[5] = ((int16_t)rawData[10] << 8) | rawData[11] ;  
-  destination[6] = ((int16_t)rawData[12] << 8) | rawData[13] ; 
-}
-
-
 volatile int* pio_n = (volatile int*)(0x01000000);
+
+
+typedef struct {
+    ProtocolHeader hdr;
+    uint64_t ts;
+    int16_t accel_x;
+    int16_t accel_y;
+    int16_t accel_z;
+}__attribute__((packed)) msg_accel_t;
+
+typedef struct {
+    ProtocolHeader hdr;
+    uint64_t ts;
+    int16_t temp;
+    int16_t gyro_x;
+    int16_t gyro_y;
+    int16_t gyro_z;
+}__attribute__((packed)) msg_gyro_t;
+
+
+void mpu9250_init(regs_mapping_t* regs)
+{
+    writeByte(regs,PWR_MGMT_1,0x80); 		//Reset the sensor	
+	delay(100000);
+	writeByte(regs,SIGNAL_PATH_RESET,0x07);	//Reset all the digital signal path
+	delay(100000);
+	writeByte(regs,PWR_MGMT_1,0x01);   		//Auto select the best clock source
+	writeByte(regs,PWR_MGMT_2,0x00);			//Enable all sensors
+	writeByte(regs,CONFIG,0x07);				//Only effective using gyro, Set sample rate to 8 kHz
+	writeByte(regs,SMPLRT_DIV,0x00);			//Only effective using gyro, Set sample rate to 8 kHz	
+	writeByte(regs,GYRO_CONFIG,0x18);  		//Set gyro full range to +-2000 dps
+	writeByte(regs,ACCEL_CONFIG,0x10); 		//Set Acc full range to +-8G
+	writeByte(regs,ACCEL_CONFIG2,0x08);		//Bypass Acc DLPF to get 4k saple rate
+    writeByte(regs, INT_PIN_CFG, 0x00);  // INT is 50 microsecond pulse and any read to clear  
+	writeByte(regs,INT_ENABLE,0x01);					//Enable data ready interupt
+}
+
+
+uint32_t packet_count = 0;
+uint32_t latest_ts = 0;
+uint32_t latest_ts2 = 0;
+uint32_t latest_ts_processing = 0;
+uint32_t latest_ts_processing2 = 0;
+uint32_t latest_ts_processing3 = 0;
+uint32_t latest_ts_processing4 = 0;
+
+void mpu9250_read_data(regs_mapping_t* regs, mpu_9250_sensors_data_t *data)
+{
+    uint8_t rawData[sizeof(mpu_9250_sensors_data_t)];  // x/y/z accel register data stored here
+
+    // we use high clock speed for data only
+    regs->spi_div = SPI_HIGH_SPEED_DIV;
+    ts_start(&latest_ts_processing3);
+    readBytes(regs, ACCEL_XOUT_H, sizeof(rawData), &rawData[0]);  // Read the 14 raw data registers into data array
+    ts_stop(&latest_ts_processing3);
+    uint8_t i;
+
+    //for (i=0;i<sizeof(rawData)/2;i++)
+    //    ((int16_t*)data)[i] = ((int16_t)rawData[i*2] << 8) | rawData[i*2+1] ; // reverse MSB & LSB
+    ((int16_t*)data)[0] = ((int16_t)rawData[0*2] << 8) | rawData[0*2+1] ; // reverse MSB & LSB
+    ((int16_t*)data)[1] = ((int16_t)rawData[1*2] << 8) | rawData[1*2+1] ; // reverse MSB & LSB
+    ((int16_t*)data)[2] = ((int16_t)rawData[2*2] << 8) | rawData[2*2+1] ; // reverse MSB & LSB
+    ((int16_t*)data)[3] = ((int16_t)rawData[3*2] << 8) | rawData[3*2+1] ; // reverse MSB & LSB
+    ((int16_t*)data)[4] = ((int16_t)rawData[4*2] << 8) | rawData[4*2+1] ; // reverse MSB & LSB
+    ((int16_t*)data)[5] = ((int16_t)rawData[5*2] << 8) | rawData[5*2+1] ; // reverse MSB & LSB
+    ((int16_t*)data)[6] = ((int16_t)rawData[6*2] << 8) | rawData[6*2+1] ; // reverse MSB & LSB
+
+    // we get back to normal speed
+    regs->spi_div = SPI_LOW_SPEED_DIV;
+}
+
+
+
+
+
+void mpu9250_wait_data_ready(regs_mapping_t* regs)
+{
+    while (regs->imu_drdy);
+    while (!regs->imu_drdy);
+}
+
+uint8_t sensors_data_identical_count = 0;   
+uint32_t sensors_data_unsync_count = 0;   
+mpu_9250_sensors_data_t sensors_data_previous = {0};   
+mpu_9250_sensors_data_t sensors_data = {0};   
+
+void imu_processing(regs_mapping_t* regs)
+{
+    static uint8_t index = 0;   
+    static uint8_t imu_drdy_previous = 0;   
+
+
+
+    uint8_t imu_drdy_current = regs->imu_drdy;
+
+ 
+    if (imu_drdy_previous == 0 && imu_drdy_current == 1) 
+    {
+        uint64_t ts;
+
+        ts = get_time64();
+
+        ts_stop(&latest_ts);
+        latest_ts2 = latest_ts;
+
+        packet_count++;
+
+        ts_start(&latest_ts_processing);
+        latest_ts_processing2 = latest_ts_processing;
+
+
+        //mpu_9250_sensors_data_t data;
+        msg_gyro_t msg_gyro;
+        msg_accel_t msg_accel;
+
+        ts_start(&latest_ts_processing4);
+        mpu9250_read_data(regs,&sensors_data);
+        ts_stop(&latest_ts_processing4);
+
+        msg_gyro.hdr.fanion = PROTOCOL_FANION;
+        msg_gyro.hdr.size = sizeof(msg_gyro);
+        msg_gyro.hdr.crc = 0x0000;
+        msg_gyro.hdr.id = 0x0000;
+
+        msg_gyro.ts = ts;
+        msg_gyro.temp = sensors_data.temp;
+        msg_gyro.gyro_x = sensors_data.gyro_x;
+        msg_gyro.gyro_y = sensors_data.gyro_y;
+        msg_gyro.gyro_z = sensors_data.gyro_z;
+
+
+        msg_gyro.hdr.crc = protocolCrc((uint8_t*)&msg_gyro,sizeof(msg_gyro));
+
+        msg_accel.hdr.fanion = PROTOCOL_FANION;
+        msg_accel.hdr.size = sizeof(msg_accel);
+        msg_accel.hdr.crc = 0x0000;
+        msg_accel.hdr.id = 0x0001;
+
+        msg_accel.ts = ts;
+        msg_accel.accel_x = sensors_data.accel_x;
+        msg_accel.accel_y = sensors_data.accel_y;
+        msg_accel.accel_z = sensors_data.accel_z;
+
+
+        msg_accel.hdr.crc = protocolCrc((uint8_t*)&msg_accel,sizeof(msg_accel));
+
+
+        ts_stop(&latest_ts_processing);
+        uart_rs232_tx_frame((uint8_t*)&msg_gyro,sizeof(msg_gyro));
+
+        // Accelerometer is 4 times slower than Gyro
+        if (++index == 4)
+        {
+            index = 0;
+            uart_rs232_tx_frame((uint8_t*)&msg_accel,sizeof(msg_accel));
+            if (   sensors_data_previous.accel_x == sensors_data.accel_x 
+                && sensors_data_previous.accel_y == sensors_data.accel_y
+                && sensors_data_previous.accel_z == sensors_data.accel_z )
+            {
+                sensors_data_identical_count++;
+
+                // we consider we are unsynced after 10 identical samples
+                if (sensors_data_identical_count >= 10)
+                {
+                    sensors_data_unsync_count++;
+                    // then we shift
+                    index = 1;
+                    sensors_data_identical_count = 0;
+                }
+            } else {
+                sensors_data_identical_count = 0;
+            }
+ 
+        }
+        
+        ts_stop(&latest_ts_processing2);
+
+        ts_start(&latest_ts);
+
+        sensors_data_previous = sensors_data;
+    }
+
+    imu_drdy_previous = imu_drdy_current;
+}
+
 
 int main()
 {
@@ -566,168 +479,31 @@ int main()
     uint8_t buf[2];
     int i;
     spi_init(regs);
-                       
-//    print_int(whoiam,1);
-    float   magCalibration1[3] = {0, 0, 0};
-    MPU9250_initMPU9250(regs,AFS_2G,GFS_250DPS,0x04);
-    delay(100000); 
 
-    uint8_t c = MPU9250_getAK8963CID(regs);
+    // 4.16Mbaud
+    uart_rs232_configure(11);
 
-    print_int(c,1);
-
-    MPU9250_initAK8963Slave(regs,MFS_16BITS,M_100Hz,magCalibration1);
-
-    print_float(magCalibration1[0],1);
-    print_float(magCalibration1[1],1);
-    print_float(magCalibration1[2],1);
-
+    mpu9250_init(regs);
 
 
     for(;;) {
 
-        //uart_rs232_buffer_tx_process(&tx_state);
-
+        imu_processing(regs);
 
         chr = jtaguart_getchar();
         if (chr != 0)
         {
             switch (chr)
             {
-
-                case 'm':
-                {
-                    MPU9250_initAK8963Slave(regs,MFS_16BITS,M_100Hz,magCalibration1);
-                    uint8_t c = MPU9250_getAK8963CID(regs);
-                    print_int(c,1);
-                    break;
-                }
-
-                case 'M':
-                {
-                    print_int(readByte(regs,EXT_SENS_DATA_00),1);
-                    break;
-                }
-
-                case 'd':
-                {
-                    mpu_9250_sensors_data_t data_values;
-                    mpu_9250_mag_data_t mag_values;
-
-                    MPU9250_readMPU9250Data(regs,&data_values);
-                    MPU9250_readMagData(regs,&mag_values);
-
-                    jtaguart_puts("ACC / TEMP / GYRO\n");
-                    for (i=0;i<sizeof(data_values)/2;i++)
-                    {
-                        print_int(((int16_t*)&data_values)[i],1);
-                    }
-                    jtaguart_puts("MAG\n");
-                    for (i=0;i<sizeof(mag_values)/2;i++)
-                    {
-                        print_int(((int16_t*)&mag_values)[i],1);
-                    }
-            
-                    break;
-                }
-
-                case 'S':
-                {
-                    spi_read(regs,0x3B,buf,2);
-                    print_int(buf[0],1); 
-                    print_int(buf[1],1); 
-                    break;
-                }
-
-
-                case 's':
-                {
-                    mpu_9250_sensors_regs_t data_regs;
-                    mpu_9250_sensors_data_t data_values;
-
-                    spi_read(regs,0x3B,&data_regs,sizeof(data_regs));
-
-                    jtaguart_puts("raw spi data\n");
-                    for (i=0;i<20;i++)
-                        print_int(regs->spi_data[i],1);
-
-                    jtaguart_puts("read regs\n");
-                    for (i=0;i<sizeof(data_regs);i++)
-                        print_int(((uint8_t*)&data_regs.accel_xout_h)[i],1);
-
-
-                    print_int(data_regs.accel_xout_h,1); 
-                    print_int(data_regs.accel_xout_l,1); 
-
-                    for (i=0;i<sizeof(data_regs)/2;i++)
-                    {
-                        uint8_t *ptr_in = &((uint8_t*)&data_regs)[i*2];
-/*
-                        jtaguart_puts("in\n");
-                        print_int(ptr_in[0],1);
-                        print_int(ptr_in[1],1);
-                        jtaguart_puts("out\n");
-*/
-
-                        uint8_t *ptr_out = &((uint8_t*)&data_values)[i*2];
-
-                        *((int16_t*)ptr_out) =  ((int16_t)ptr_in[1]) << 8 | ptr_in[0];
-                        print_int(*((int16_t*)ptr_out),1);
-                    }
-
-
-
-                    break;
-                }
-
-
-                case 'r':
-
-                    return 0;
                 case 'p':
-                    jtaguart_puts("----- IMU ----\n");
-
-                    print_int(readByte(regs,0x75),1); 
-
-                    spi_read(regs,0x74,buf,2);
-                    print_int(buf[1],1); 
-
-                    spi_read(regs,0x75,&whoiam,1);
-                    print_int(whoiam,1); 
-
-                    spi_read(regs,0x75,buf,2);
-                    print_int(buf[0],1); 
-
-
-
-
-                    for (i=0;i<20;i++)
-                        print_int(regs->spi_data[i],1);
-
-/*
-                    jtaguart_puts("----- PID Internals ----\n");
-                    if (regs->arg[0] == 0)
-                    {
-                        print_float(pid.f_target,1);                        
-                        print_float(regs->f_measure,1);                        
-                    } else {
-                        print_int(pid.target,1);                        
-                        print_int(regs->measure,1); 
-                    }
-                    print_float(pid.qr.previous_out,1);                        
-                    print_float(pid.qr.previous_var,1);                        
-                    print_int(regs->enable,1);
-                    print_int(regs->override,1);
-                    print_float(regs->speed,1);
-                    print_float(regs->acc,1);
-                    print_int(regs->sat,1);
-
-                    print_float(pid.error,1);
-                    print_float(pid.x_integral,1);
-                    print_float(pid.saturated,1);
-                    print_float(pid.x,1);
-                    print_int(period_latest,1);
-*/
+                    print_int(packet_count,1);
+                    print_int(latest_ts2,1);
+                    print_int(latest_ts_processing,1);
+                    print_int(latest_ts_processing2,1);
+                    print_int(latest_ts_processing3,1);
+                    print_int(latest_ts_processing4,1);
+                    print_int(sensors_data_identical_count,1);
+                    print_int(sensors_data_unsync_count,1);
                     break;
             }
 
